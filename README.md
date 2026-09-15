@@ -1,1 +1,0 @@
-# INF1103-Project-Placeholder_Name-
