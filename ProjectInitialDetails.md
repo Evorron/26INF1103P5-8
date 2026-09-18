@@ -1,4 +1,4 @@
-<h1>Hawker AI - https://github.com/Evorron/26INF1103P5-8</h1>
+<h1>Hawker AI</h1>
 
 An AI tool using consumer and seasonal trends, as well as weather forecasting to provide recommendations on the amount of food the business needs to prepare. The main scope of this project is to assist users in preventing unnecessary spending costs in resources, leading to food wastage.
 
@@ -9,14 +9,15 @@ Hawkers
 Pop-up Stall Vendors
 Home-based food businesses
 
-<h2><2. User Inputs></h2>
-Mandatory Inputs:
-Additional Inputs:
-User Profile (Business Type): Are you a hawker, pop-up stall vendor, or a home-based cook?
-Operation Duration (Based on User Profile): Operating Hours (Hawkers & Home-Based cook), Date of pop-up stall (How long will the event be?) 
-Food Category: (Savoury/Sweet; Hot/Cold Desserts; etc)
-Location (Where is the hawker store/home-based cook store/ pop-up stall located at?)
-Quantity of ingredient Ordered (Fixed Bulk Order) → Assist with food preparation
+<h2>2. User Inputs</h2>
+| Mandatory Inputs: | Additional Inputs: |
+|----------|-------|--------|
+|<b>User Profile (Business Type):</b> Are you a hawker, pop-up stall vendor, or a home-based cook?|
+|</b>Operation Duration (Based on User Profile):</b> Operating Hours (Hawkers & Home-Based cook), Date of pop-up stall (How long will the event be?) 
+|<b>Food Category:</b> (Savoury/Sweet; Hot/Cold Desserts; etc)|
+|<b>Location:</b> (Where is the hawker store/home-based cook store/ pop-up stall located at?)|
+|<b>Quantity of ingredient Ordered:</b> (Fixed Bulk Order) → Assist with food preparation|
+
 Historical Performance (Daily/Weekly):
 Crowd Density (Average Customers per day)
 Sales
@@ -40,7 +41,6 @@ Forecast expected crowd density for holiday seasons with historical sales
 Cost effective operating methods to boost business and reduce unnecessary cost
 
 <h2>4. Business Rules, Validations, Decision-Making logic<h2>
-
 Business Rule (fixed rules the system follows)
 AI predictions based on historical sales patterns and demand
 Considerations of weekends, public holidays, other special events
