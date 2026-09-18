@@ -11,7 +11,7 @@ Home-based food businesses
 
 <h2>2. User Inputs</h2>
 | Mandatory Inputs: | Additional Inputs: |
-|----------|-------|--------|
+
 |<b>User Profile (Business Type):</b> Are you a hawker, pop-up stall vendor, or a home-based cook?|
 |</b>Operation Duration (Based on User Profile):</b> Operating Hours (Hawkers & Home-Based cook), Date of pop-up stall (How long will the event be?) 
 |<b>Food Category:</b> (Savoury/Sweet; Hot/Cold Desserts; etc)|
