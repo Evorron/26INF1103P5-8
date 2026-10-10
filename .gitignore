@@ -1,1 +1,5 @@
-.env    # ignores environment variable files to prevent information from being committed
+ # ignores compiled python files and environment variable files from version control
+    
+.env   
+__pycache__/
+*.pyc
