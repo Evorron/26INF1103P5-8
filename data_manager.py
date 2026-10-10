@@ -91,7 +91,63 @@ def save_records(storage_path: Path, records: list[dict]) -> None:
 
             writer.writerow(row)
 
+# find user's history for a food item
+def records_for_item(
+    storage_path: Path,
+    user_name: str,
+    food_item: str
+) -> list[dict]:
+    """Return records for one user and food item, earliest first."""
+    normalized_name = user_name.casefold().strip()
+    normalized_item = food_item.casefold().strip()
 
+    matches = [
+        record
+        for record in load_records(storage_path)
+        if record["user_name"].casefold().strip() == normalized_name
+        and record["food_item"].casefold().strip() == normalized_item
+    ]
+
+    return sorted(matches, key=lambda record: record["record_date"])
+
+
+# lists the user's recorded food items
+def item_names_for_user(
+    storage_path: Path,
+    user_name: str
+) -> list[str]:
+    """Return the unique food items recorded by one user."""
+    normalized_name = user_name.casefold().strip()
+
+    names = {
+        record["food_item"].strip()
+        for record in load_records(storage_path)
+        if record["user_name"].casefold().strip() == normalized_name
+    }
+
+    return sorted(names, key=str.casefold)
+
+
+# filters records by date
+def records_in_date_range(
+    storage_path: Path,
+    user_name: str,
+    food_item: str,
+    start_date: date,
+    end_date: date
+) -> list[dict]:
+    """Return matching records within an inclusive date range."""
+    item_records = records_for_item(
+        storage_path, user_name, food_item
+    )
+
+    return [
+        record
+        for record in item_records
+        if start_date <= record["record_date"] <= end_date
+    ]
+
+# end - for storing historical sales records
 
 
 # def save_inventory_record(record):
