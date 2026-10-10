@@ -1,0 +1,1 @@
+.env    # ignores environment variable files to prevent information from being committed
