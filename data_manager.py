@@ -1,7 +1,7 @@
 """JSON persistence for historical Hawker AI sales records."""
 
 import csv
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 
@@ -148,6 +148,60 @@ def records_in_date_range(
     ]
 
 # end - for storing historical sales records
+
+
+AI_RECOMMENDATIONS_FILE = (
+    Path(__file__).resolve().parent
+    / "data"
+    / "ai_recommendations.csv"
+)
+
+AI_RECOMMENDATION_FIELDS = [
+    "user_name",
+    "food_item",
+    "forecast_date",
+    "recommended_portions",
+    "reason",
+]
+
+
+def save_ai_recommendation(
+    storage_path: Path,
+    user_name: str,
+    food_item: str,
+    forecast_date: date,
+    recommended_portions: int,
+    reason: str,
+) -> None:
+    """Save the final food preparation recommendation to CSV."""
+    storage_path.parent.mkdir(parents=True, exist_ok=True)
+
+    needs_header = (
+        not storage_path.exists()
+        or storage_path.stat().st_size == 0
+    )
+
+    row = {
+        "user_name": user_name,
+        "food_item": food_item,
+        "forecast_date": forecast_date.isoformat(),
+        "recommended_portions": recommended_portions,
+        "reason": reason,
+    }
+
+    with storage_path.open(
+        "a", newline="", encoding="utf-8"
+    ) as file:
+        writer = csv.DictWriter(
+            file,
+            fieldnames=AI_RECOMMENDATION_FIELDS,
+        )
+
+        if needs_header:
+            writer.writeheader()
+
+        writer.writerow(row)
+
 
 
 # def save_inventory_record(record):
