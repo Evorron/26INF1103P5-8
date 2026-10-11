@@ -1,4 +1,9 @@
-"""Validation and non-forecasting guardrails for Hawker AI."""
+"""Business rules and forecast guardrails for Hawker AI.
+
+This module keeps deterministic validation separate from Gemini so invalid
+records, unsupported claims, and unsafe quantities are rejected consistently.
+It verifies AI output but never silently changes an AI recommendation.
+"""
 
 from datetime import date
 from math import floor
@@ -12,6 +17,8 @@ REQUIRED_SAME_WEEKDAY_RECORDS = 4
 HISTORICAL_SHIFT_THRESHOLD = 0.20
 EVIDENCE_TOLERANCE = 0.01
 
+
+# Input validation
 
 def validate_sales_record(record: dict) -> None:
     """Reject incomplete, impossible, or inconsistent historical records."""
@@ -40,6 +47,8 @@ def validate_forecast_request(request: dict, historical_records: list[dict]) -> 
     if not historical_records:
         raise ValueError("No historical records were found for this food item.")
 
+
+# AI response validation
 
 def validate_ai_response(response: dict, request: dict, historical_records: list[dict]) -> list[str]:
     """Return failed guardrails; this function never changes an AI quantity."""
@@ -101,6 +110,8 @@ def validate_ai_response(response: dict, request: dict, historical_records: list
                 )
     return issues
 
+
+# Gemini payload and evidence facts
 
 def build_ai_payload(request: dict, historical_records: list[dict]) -> dict:
     """Package raw history for Gemini; no trends or forecast are calculated here."""
@@ -201,6 +212,8 @@ def average_or_none(values: list[int]) -> float | None:
     """Return an average only when the required comparison records exist."""
     return sum(values) / len(values) if len(values) == REQUIRED_SAME_WEEKDAY_RECORDS else None
 
+
+# Shared text validation helpers
 
 def validate_context(context: str, label: str) -> None:
     """Limit optional free text before it is sent to Gemini."""
