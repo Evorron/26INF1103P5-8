@@ -1,8 +1,3 @@
-"""
-ai_manager.py - AI Processing Layer
-100% procedural module for Hawker AI using the Interactions API and gemini-3.8-flash.
-"""
-
 import json
 import os
 import requests
@@ -11,6 +6,7 @@ from dotenv import load_dotenv
 # Load environment variables from .env
 load_dotenv()
 
+# Define default API URL endpoint and specific AI model to use
 DEFAULT_ENDPOINT = os.getenv("GEMINI_API_URL", "https://generativelanguage.googleapis.com/v1beta/interactions").strip()
 DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash").strip()
 
@@ -20,15 +16,15 @@ Analyze the provided historical sales records and future context for the food it
 Return ONLY a valid JSON object matching the requested schema.
 """.strip()
 
-# Defining the expected response schema for validation
-
+# Defining the exact structure of the expected response from the AI
 RESPONSE_SCHEMA = {
     "type": "object",
     "additionalProperties": False,
     "properties": {
-        "demand_impact_factor": {"type": "number"},
-        "context_assessment": {"type": "string"},
-        "confidence_score": {"type": "string", "enum": ["high", "medium", "low"]},
+        "demand_impact_factor": {"type": "number"},                                   # demand_impact_factor: Numerical factor indicating the expected impact on demand (eg. 1.0 for norm day, 0.8 if heavy rain is expected)
+        "context_assessment": {"type": "string"},                                     # context_assessment: reasoning behind the demand impact factor
+        "confidence_score": {"type": "string", "enum": ["high", "medium", "low"]},    # confidence_score: how sure the AI is about its own prediction
+        "factors_considered": {"type": "array", "items": {"type": "string"}},         # factors_considered: list of factors that AI looked at to make its decision
         "factors_considered": {
             "type": "array",
             "items": {"type": "string"}
@@ -36,11 +32,6 @@ RESPONSE_SCHEMA = {
     },
     "required": ["demand_impact_factor", "context_assessment", "confidence_score", "factors_considered"]
 }
-
-# demand_impact_factor: Numerical factor indicating the expected impact on demand (eg. 1.0 for norm day, 0.8 if heavy rain is expected)
-# context_assessment: reasoning behind the demand impact factor
-# confidence_score: how sure the AI is about its own prediction
-# factors_considered: list of factors that AI looked at to make its decision
 
 def generate_forecast(
     evidence_payload: dict,
@@ -52,8 +43,11 @@ def generate_forecast(
     Calls Gemini using the Interactions API endpoint and gemini-3.8-flash.
     Parses the steps structure returned by the v1beta interactions endpoint.
     """
+
+# Get API key from environment variables
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
 
+# Safety fallback response in case of API failure or missing key
     fallback_response = {
         "status": "fallback",
         "demand_impact_factor": 1.0,
@@ -61,7 +55,8 @@ def generate_forecast(
         "confidence_score": "low",
         "factors_considered": ["API Connection Unavailable"]
     }
-
+    
+# If no key found, log warning and return fallback response
     if not api_key:
         print("\n[AI Manager Warning] GEMINI_API_KEY not found in .env file.")
         return fallback_response
@@ -78,23 +73,25 @@ def generate_forecast(
         "response_format": {
             "type": "text",
             "mime_type": "application/json",
-            "schema": RESPONSE_SCHEMA,
+            "schema": RESPONSE_SCHEMA,          # Forces AI to obey schema rules
         },
         "store": False,
     }
 
+# Set up HTTP headers for the API request, including authentication
     headers = {
         "x-goog-api-key": api_key,
         "Content-Type": "application/json"
     }
 
     try:
+# Send POST request to the Gemini API endpoint with 20 seconds timeout limit
         response = requests.post(DEFAULT_ENDPOINT, headers=headers, json=request_body, timeout=20)
 
         if response.status_code == 200:
             result_body = response.json()
             
-            # Extract text safely from the Interactions API steps structure
+# Extract text safely from the Interactions API steps structure
             steps = result_body.get("steps", [])
             for step in steps:
                 content_list = step.get("content", [])
@@ -103,10 +100,12 @@ def generate_forecast(
                         parsed_json = json.loads(content["text"])
                         parsed_json["status"] = "success"
                         return parsed_json
-
+                    
+# Returns error code & message if the API response is not successful and return fallback response
         print(f"\n[AI Manager Error] HTTP {response.status_code}: {response.text}")
         return fallback_response
 
+# Catch network crashes or timeout errors and return fallback response
     except Exception as e:
         print(f"\n[AI Manager Exception] Failed to reach Gemini API: {e}")
         return fallback_response
