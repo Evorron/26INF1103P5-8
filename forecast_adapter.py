@@ -9,15 +9,79 @@ isolated instead of mixing it into AI access, business rules, or the UI.
 # This file turns Gemini's demand factor into a full preparation forecast.
 # It calculates a suggested quantity from past sales, adds display details,
 # and sends the result through the project safety checks.
+#
+# Program flow:
+# 1. generate_logged_forecast receives data from main.py.
+# 2. logic_manager filters and validates the relevant sales records.
+# 3. ai_manager returns a demand-impact factor from Gemini (or a fallback).
+# 4. This adapter converts the factor into a portion quantity and validates it.
+# 5. activity_logger writes a safe audit entry without storing API credentials.
 
 from math import ceil, floor, isfinite
+from pathlib import Path
 from statistics import median
+from uuid import uuid4
 
+import activity_logger
 import ai_manager
 import logic_manager
 
 
-# Public integration point
+# Public application integration point
+
+def generate_logged_forecast(
+    request: dict, all_records: list[dict], log_path: Path | None = None
+) -> dict:
+    """Validate, log, and generate one forecast for the command-line application.
+
+    ``generate_forecast`` below is the original adapter implementation.  It is
+    retained as the focused AI-to-forecast conversion step; this new wrapper
+    connects it to the logic manager and activity logger.
+    """
+    # Work only with the requested user's records for the requested food item;
+    # unrelated sales must never influence this forecast.
+    historical_records = logic_manager.records_for_forecast(request, all_records)
+    evidence_payload = logic_manager.build_ai_payload(request, historical_records)
+    # The ID links the request and response entries in the JSON-lines log.
+    activity_id = str(uuid4())
+    resolved_log_path = log_path or Path(__file__).resolve().parent / "data" / "forecast_activity.jsonl"
+    activity_logger.initialise_log(resolved_log_path)
+    activity_logger.log_request(
+        resolved_log_path,
+        activity_id,
+        ai_manager.DEFAULT_MODEL,
+        evidence_payload,
+        validation_feedback=None,
+        provider_attempt=1,
+    )
+    try:
+        # The original adapter builds the user-facing response and asks the
+        # logic manager to verify all guardrails before returning it.
+        response = generate_forecast(request, historical_records)
+    except (RuntimeError, ValueError, KeyError, TypeError) as error:
+        activity_logger.log_error(
+            resolved_log_path,
+            activity_id,
+            ai_manager.DEFAULT_MODEL,
+            str(error),
+            status=None,
+            failure_type="forecast_validation",
+        )
+        raise
+
+    # Logging after validation ensures the recorded result is exactly what the
+    # user was shown, rather than an unvalidated intermediate AI response.
+    activity_logger.log_response(
+        resolved_log_path,
+        activity_id,
+        ai_manager.DEFAULT_MODEL,
+        interaction_id=None,
+        response=response,
+    )
+    return response
+
+
+# Original adapter implementation (called by generate_logged_forecast)
 
 def generate_forecast(request: dict, historical_records: list[dict]) -> dict:
     """Ask the unchanged AI manager for a factor and create a validated forecast."""
@@ -25,6 +89,8 @@ def generate_forecast(request: dict, historical_records: list[dict]) -> dict:
     evidence_payload = logic_manager.build_ai_payload(request, historical_records)
     ai_response = ai_manager.generate_forecast(evidence_payload)
     if ai_response.get("status") != "success":
+        # An unavailable API should not crash the app.  Use a conservative,
+        # clearly labelled local baseline instead of pretending Gemini replied.
         return baseline_fallback_forecast(request, historical_records)
 
     factor = valid_demand_factor(ai_response)
@@ -37,6 +103,9 @@ def generate_forecast(request: dict, historical_records: list[dict]) -> dict:
     factors = normalise_factors(ai_response.get("factors_considered"))
     has_future_context = bool(request["future_context"].strip())
 
+    # This response shape is shared with show_forecast in the IO layer and
+    # validate_ai_response in the logic layer.  Extra fields record why an
+    # exception to the usual weekday guardrail may be permitted.
     response = {
         "suggested_portions": suggested_portions,
         "confidence": confidence,
@@ -86,7 +155,9 @@ def generate_forecast(request: dict, historical_records: list[dict]) -> dict:
 
 def baseline_fallback_forecast(request: dict, historical_records: list[dict]) -> dict:
     """Return a low-confidence median-sales forecast when Gemini is unavailable."""
-    # This local fallback makes a useful forecast without sending another API request.
+    # This local fallback makes a useful forecast without sending another API
+    # request.  It deliberately ignores future context because Gemini was not
+    # available to assess the likely impact of that context.
     baseline_request = {**request, "future_context": ""}
     suggested_portions = quantity_from_factor(1.0, baseline_request, historical_records)
     evidence_metrics = logic_manager.calculate_evidence_metrics(
@@ -155,6 +226,8 @@ def quantity_from_factor(factor: float, request: dict, historical_records: list[
     if historical_maximum == 0:
         raise RuntimeError("A positive forecast cannot be produced because all saved sales are zero.")
 
+    # Median sales are less affected by an unusually busy or quiet single day
+    # than a simple average.  Gemini's factor is applied to that typical value.
     quantity = max(1, round(median(sales) * factor))
     maximum_allowed = floor(historical_maximum * logic_manager.MAXIMUM_MULTIPLIER)
     quantity = min(quantity, maximum_allowed)
@@ -166,6 +239,8 @@ def quantity_from_factor(factor: float, request: dict, historical_records: list[
     if len(same_weekday_sales) >= logic_manager.REQUIRED_SAME_WEEKDAY_RECORDS:
         weekday_average = sum(same_weekday_sales[-logic_manager.REQUIRED_SAME_WEEKDAY_RECORDS:]) / 4
         if weekday_average > 0 and not request["future_context"].strip():
+            # Without a supplied reason for a change, keep the quantity within
+            # ±50% of the recent target-weekday average.
             quantity = max(ceil(weekday_average * 0.5), min(quantity, floor(weekday_average * 1.5)))
     return quantity
 

@@ -9,18 +9,85 @@ silently changes an AI recommendation.
 # This file is the project's rule checker. It validates user input, prepares
 # sales facts for Gemini, and checks that the final forecast follows the
 # project limits before it can be shown to the user.
+#
+# Program flow:
+# 1. main.py supplies records or a forecast request.
+# 2. This module validates and filters the data.
+# 3. forecast_adapter.py receives only valid, relevant records.
+# 4. This module checks the adapter's completed response before it is displayed.
 
 from datetime import date
 from math import floor
 
 
+# Input-quality rules used for both interactive input and future data sources.
 CONTEXT_WORD_LIMIT = 150
 LOW_CONFIDENCE_RECORD_COUNT = 7
+
+# Forecast safety rules.  They limit unusually high recommendations unless
+# there is sufficient weekday history, a genuine historical shift, or context.
 MAXIMUM_MULTIPLIER = 1.5
 WEEKDAY_DEVIATION_LIMIT = 0.50
 REQUIRED_SAME_WEEKDAY_RECORDS = 4
 HISTORICAL_SHIFT_THRESHOLD = 0.20
+
+# Gemini-provided evidence is compared with local calculations.  A small
+# tolerance prevents harmless decimal-rounding differences from causing failure.
 EVIDENCE_TOLERANCE = 0.01
+
+
+def normalise_text(value: str) -> str:
+    """Return text in the comparison format used for names and food items."""
+    # For example, "  Chicken   Rice " and "chicken rice" should match the
+    # same saved food item, while the original spelling remains for display.
+    return " ".join(value.split()).casefold()
+
+
+def records_for_forecast(request: dict, all_records: list[dict]) -> list[dict]:
+    """Select and validate the saved history belonging to one forecast request.
+
+    This is the boundary between the user interface's complete CSV data set and
+    the adapter's forecast-only data set.  Matching ignores capitalisation and
+    extra spaces, while the returned records keep their original display text.
+    """
+    matching_records = [
+        record
+        for record in all_records
+        if normalise_text(record["user_name"]) == normalise_text(request["user_name"])
+        and normalise_text(record["food_item"]) == normalise_text(request["food_item"])
+    ]
+    matching_records.sort(key=lambda record: record["record_date"])
+    # Sorting makes "last four" calculations consistently mean the four most
+    # recent dates, even when CSV rows were entered out of date order.
+    validate_forecast_request(request, matching_records)
+    return matching_records
+
+
+def food_items_for_user(user_name: str, all_records: list[dict]) -> list[str]:
+    """Return a user's recorded food items, without case-insensitive duplicates."""
+    seen_items: set[str] = set()
+    items: list[str] = []
+    normalised_user = normalise_text(user_name)
+    for record in all_records:
+        if normalise_text(record["user_name"]) != normalised_user:
+            continue
+        normalised_item = normalise_text(record["food_item"])
+        if normalised_item not in seen_items:
+            seen_items.add(normalised_item)
+            items.append(record["food_item"])
+    return sorted(items, key=str.casefold)
+
+
+def records_for_search(search_filters: dict, all_records: list[dict]) -> list[dict]:
+    """Return one user's item records within the requested inclusive date range."""
+    matching_records = [
+        record
+        for record in all_records
+        if normalise_text(record["user_name"]) == normalise_text(search_filters["user_name"])
+        and normalise_text(record["food_item"]) == normalise_text(search_filters["food_item"])
+        and search_filters["start_date"] <= record["record_date"] <= search_filters["end_date"]
+    ]
+    return sorted(matching_records, key=lambda record: record["record_date"])
 
 
 def validate_sales_record(record: dict) -> None:
@@ -73,7 +140,9 @@ def validate_forecast_request(request: dict, historical_records: list[dict]) -> 
 
 def build_ai_payload(request: dict, historical_records: list[dict]) -> dict:
     """Package raw history for Gemini; no trends or forecast are calculated here."""
-    # Give Gemini the raw records and rule values, without changing the sales data.
+    # Give Gemini the raw records and rule values, without changing the sales
+    # data.  The adapter, rather than Gemini, remains responsible for deciding
+    # whether the completed response is safe to display.
     return {
         "forecast_request": {
             "user_name": request["user_name"],
@@ -107,6 +176,8 @@ def build_ai_payload(request: dict, historical_records: list[dict]) -> dict:
 def calculate_evidence_metrics(historical_records: list[dict], target_date: date) -> dict[str, float | None]:
     """Calculate facts only to verify Gemini's claims, never to forecast."""
     # These averages and totals are used as evidence when checking the AI result.
+    # They are not a second forecasting algorithm: their purpose is to verify
+    # factual claims such as record counts and historical averages.
     all_sales = [record["portions_sold"] for record in historical_records]
     same_weekday_sales = [
         record["portions_sold"]
@@ -142,6 +213,8 @@ def calculate_evidence_metrics(historical_records: list[dict], target_date: date
 def validate_ai_response(response: dict, request: dict, historical_records: list[dict]) -> list[str]:
     """Return failed guardrails; this function never changes an AI quantity."""
     # Return every failed rule so the adapter can stop an unsafe forecast.
+    # Collect every issue in one pass so the adapter can report a useful error
+    # instead of repeatedly asking the AI to fix one unknown problem at a time.
     issues = []
     if response["suggested_portions"] <= 0:
         issues.append("suggested_portions must be a positive whole number")
@@ -169,6 +242,8 @@ def validate_ai_response(response: dict, request: dict, historical_records: list
             issues.append(f"evidence claim for {metric} must not be empty")
 
     if len(historical_records) < LOW_CONFIDENCE_RECORD_COUNT:
+        # A small data set can still produce a forecast, but it must make its
+        # uncertainty visible to the hawker.
         if response["confidence"] != "low":
             issues.append(
                 "confidence must be low because fewer than "
@@ -189,6 +264,8 @@ def validate_ai_response(response: dict, request: dict, historical_records: list
         if record["record_date"].weekday() == request["target_date"].weekday()
     ]
     if len(same_weekday_sales) >= REQUIRED_SAME_WEEKDAY_RECORDS:
+        # Day-of-week demand can differ significantly (for example, weekends),
+        # so compare against recent records from the target weekday when able.
         weekday_average = sum(same_weekday_sales[-REQUIRED_SAME_WEEKDAY_RECORDS:]) / REQUIRED_SAME_WEEKDAY_RECORDS
         deviation = (
             float("inf")
@@ -206,6 +283,8 @@ def validate_ai_response(response: dict, request: dict, historical_records: list
 
             cited_metrics = {item["metric"] for item in response["evidence"]}
             shift_allows_exception = False
+            # A large, evidenced change in recent demand may justify moving
+            # beyond the weekday range, even when no future context was given.
             if response["uses_historical_shift"] and response["historical_shift_justification"]:
                 for recent_metric, earlier_metric in (
                     ("last_4_overall_average", "previous_4_overall_average"),
