@@ -21,8 +21,39 @@ FIELDNAMES = [
 
 
 # start - for storing historical sales records
+
 def add_record(storage_path: Path, record: dict) -> None:
-    """Append one sales record to the CSV file."""
+    """Save a sales record, rejecting duplicate food items on the same date for the same user."""
+
+    # Load existing records before saving
+    existing_records = load_records(storage_path)
+
+    # Normalise values so capitalisation and extra spaces do not bypass the check
+    user_name = record["user_name"].strip().casefold()
+    food_item = record["food_item"].strip().casefold()
+    record_date = record["record_date"]
+
+    if isinstance(record_date, str):
+        record_date = date.fromisoformat(record_date)
+
+    # Reject a record if the same user already recorded this item on this date
+    for existing in existing_records:
+        same_user = (
+            existing["user_name"].strip().casefold() == user_name
+        )
+        same_item = (
+            existing["food_item"].strip().casefold() == food_item
+        )
+        same_date = existing["record_date"] == record_date
+
+        if same_user and same_item and same_date:
+            raise ValueError(
+                f"You have already recorded '{record['food_item']}' "
+                f"on {record_date.isoformat()}. "
+                "Each food item can only have one record per day."
+            )
+
+    # Save the record if no duplicate was found
     storage_path.parent.mkdir(parents=True, exist_ok=True)
 
     needs_header = (
@@ -35,8 +66,7 @@ def add_record(storage_path: Path, record: dict) -> None:
         for field in FIELDNAMES
     }
 
-    if isinstance(row["record_date"], date):
-        row["record_date"] = row["record_date"].isoformat()
+    row["record_date"] = record_date.isoformat()
 
     with storage_path.open("a", newline="", encoding="utf-8") as file:
         writer = csv.DictWriter(file, fieldnames=FIELDNAMES)
