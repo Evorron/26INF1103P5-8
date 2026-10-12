@@ -6,6 +6,10 @@ complete, validated preparation forecast. The adapter keeps that translation
 isolated instead of mixing it into AI access, business rules, or the UI.
 """
 
+# This file turns Gemini's demand factor into a full preparation forecast.
+# It calculates a suggested quantity from past sales, adds display details,
+# and sends the result through the project safety checks.
+
 from math import ceil, floor, isfinite
 from statistics import median
 
@@ -17,13 +21,11 @@ import logic_manager
 
 def generate_forecast(request: dict, historical_records: list[dict]) -> dict:
     """Ask the unchanged AI manager for a factor and create a validated forecast."""
+    # Main flow: prepare data, get Gemini's factor, build a forecast, then validate it.
     evidence_payload = logic_manager.build_ai_payload(request, historical_records)
     ai_response = ai_manager.generate_forecast(evidence_payload)
     if ai_response.get("status") != "success":
-        raise RuntimeError(
-            "Gemini is unavailable or has not been configured. "
-            "No forecast was created. Set GEMINI_API_KEY and try again."
-        )
+        return baseline_fallback_forecast(request, historical_records)
 
     factor = valid_demand_factor(ai_response)
     suggested_portions = quantity_from_factor(factor, request, historical_records)
@@ -82,10 +84,60 @@ def generate_forecast(request: dict, historical_records: list[dict]) -> dict:
     return response
 
 
+def baseline_fallback_forecast(request: dict, historical_records: list[dict]) -> dict:
+    """Return a low-confidence median-sales forecast when Gemini is unavailable."""
+    # This local fallback makes a useful forecast without sending another API request.
+    baseline_request = {**request, "future_context": ""}
+    suggested_portions = quantity_from_factor(1.0, baseline_request, historical_records)
+    evidence_metrics = logic_manager.calculate_evidence_metrics(
+        historical_records, request["target_date"]
+    )
+    response = {
+        "suggested_portions": suggested_portions,
+        "confidence": "low",
+        "reasoning": (
+            "Gemini is unavailable, so this forecast uses the middle value "
+            "of the saved sales records without an AI adjustment."
+        ),
+        "business_advice": (
+            f"Prepare {suggested_portions} portions, then compare sales and leftovers "
+            "after service before relying on future forecasts."
+        ),
+        "factors_considered": ["Historical median baseline", "Gemini unavailable"],
+        "evidence": [
+            {
+                "metric": "record_count",
+                "value": evidence_metrics["record_count"],
+                "claim": f"The baseline uses {int(evidence_metrics['record_count'])} saved sales records.",
+            },
+            {
+                "metric": "historical_maximum_sold",
+                "value": evidence_metrics["historical_maximum_sold"],
+                "claim": (
+                    "The highest recorded sales value is "
+                    f"{int(evidence_metrics['historical_maximum_sold'])} portions."
+                ),
+            },
+        ],
+        "warning": (
+            "Gemini is unavailable. This is a low-confidence baseline based only on saved sales."
+        ),
+        "uses_future_context": False,
+        "exception_justification": None,
+        "uses_historical_shift": False,
+        "historical_shift_justification": None,
+    }
+    violations = logic_manager.validate_ai_response(response, request, historical_records)
+    if violations:
+        raise RuntimeError("The baseline forecast could not meet the safety rules: " + "; ".join(violations))
+    return response
+
+
 # AI response normalisation and quantity calculation
 
 def valid_demand_factor(ai_response: dict) -> float:
     """Validate the factor supplied by the unchanged AI manager."""
+    # Gemini's factor must be a real positive number before it affects the quantity.
     try:
         factor = float(ai_response["demand_impact_factor"])
     except (KeyError, TypeError, ValueError) as error:
@@ -97,6 +149,7 @@ def valid_demand_factor(ai_response: dict) -> float:
 
 def quantity_from_factor(factor: float, request: dict, historical_records: list[dict]) -> int:
     """Apply Gemini's factor to median demand, while retaining local guardrails."""
+    # Use typical past sales as the baseline, then keep the quantity within safe limits.
     sales = [record["portions_sold"] for record in historical_records]
     historical_maximum = max(sales)
     if historical_maximum == 0:
@@ -119,6 +172,7 @@ def quantity_from_factor(factor: float, request: dict, historical_records: list[
 
 def normalise_confidence(ai_response: dict, record_count: int) -> str:
     """Keep Gemini's label when valid, enforcing low confidence for short history."""
+    # Limited sales history always means the forecast should be labelled low confidence.
     if record_count < logic_manager.LOW_CONFIDENCE_RECORD_COUNT:
         return "low"
     confidence = str(ai_response.get("confidence_score", "medium")).lower().strip()
@@ -127,6 +181,7 @@ def normalise_confidence(ai_response: dict, record_count: int) -> str:
 
 def normalise_factors(value: object) -> list[str]:
     """Return concise non-empty factors suitable for the display layer."""
+    # Keep the displayed reasons short and provide a fallback when Gemini gives none.
     if isinstance(value, list):
         factors = [str(item).strip() for item in value if str(item).strip()]
         if factors:

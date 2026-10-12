@@ -6,6 +6,10 @@ and validate Gemini's completed forecast. It verifies AI output but never
 silently changes an AI recommendation.
 """
 
+# This file is the project's rule checker. It validates user input, prepares
+# sales facts for Gemini, and checks that the final forecast follows the
+# project limits before it can be shown to the user.
+
 from datetime import date
 from math import floor
 
@@ -21,6 +25,7 @@ EVIDENCE_TOLERANCE = 0.01
 
 def validate_sales_record(record: dict) -> None:
     """Reject incomplete, impossible, or inconsistent historical records."""
+    # Check saved sales data first so inaccurate records do not affect forecasts.
     for value, label in ((record["user_name"], "Name"), (record["food_item"], "Food item")):
         cleaned_value = value.strip()
         is_words_only = (
@@ -46,6 +51,7 @@ def validate_sales_record(record: dict) -> None:
 
 def validate_forecast_request(request: dict, historical_records: list[dict]) -> None:
     """Check that a forecast has valid inputs before Gemini is called."""
+    # A forecast needs a future date and at least one matching past sales record.
     for value, label in ((request["user_name"], "Name"), (request["food_item"], "Forecast food item")):
         cleaned_value = value.strip()
         is_words_only = (
@@ -67,6 +73,7 @@ def validate_forecast_request(request: dict, historical_records: list[dict]) -> 
 
 def build_ai_payload(request: dict, historical_records: list[dict]) -> dict:
     """Package raw history for Gemini; no trends or forecast are calculated here."""
+    # Give Gemini the raw records and rule values, without changing the sales data.
     return {
         "forecast_request": {
             "user_name": request["user_name"],
@@ -99,6 +106,7 @@ def build_ai_payload(request: dict, historical_records: list[dict]) -> dict:
 
 def calculate_evidence_metrics(historical_records: list[dict], target_date: date) -> dict[str, float | None]:
     """Calculate facts only to verify Gemini's claims, never to forecast."""
+    # These averages and totals are used as evidence when checking the AI result.
     all_sales = [record["portions_sold"] for record in historical_records]
     same_weekday_sales = [
         record["portions_sold"]
@@ -133,6 +141,7 @@ def calculate_evidence_metrics(historical_records: list[dict], target_date: date
 
 def validate_ai_response(response: dict, request: dict, historical_records: list[dict]) -> list[str]:
     """Return failed guardrails; this function never changes an AI quantity."""
+    # Return every failed rule so the adapter can stop an unsafe forecast.
     issues = []
     if response["suggested_portions"] <= 0:
         issues.append("suggested_portions must be a positive whole number")
