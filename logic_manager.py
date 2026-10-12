@@ -143,6 +143,28 @@ def build_ai_payload(request: dict, historical_records: list[dict]) -> dict:
     # Give Gemini the raw records and rule values, without changing the sales
     # data.  The adapter, rather than Gemini, remains responsible for deciding
     # whether the completed response is safe to display.
+    # Sort before selecting the focused groups so "recent" has the same
+    # meaning even when the CSV records were entered out of date order.
+    ordered_records = sorted(historical_records, key=lambda record: record["record_date"])
+
+    def serialise_record(record: dict) -> dict:
+        """Convert one local record into JSON-safe factual evidence for Gemini."""
+        return {
+            "record_date": record["record_date"].isoformat(),
+            "weekday": record["record_date"].strftime("%A"),
+            "food_item": record["food_item"],
+            "portions_prepared": record["portions_prepared"],
+            "portions_sold": record["portions_sold"],
+            "leftover_portions": record["portions_prepared"] - record["portions_sold"],
+            "past_context": record["past_context"] or None,
+        }
+
+    same_weekday_records = [
+        record
+        for record in ordered_records
+        if record["record_date"].weekday() == request["target_date"].weekday()
+    ]
+
     return {
         "forecast_request": {
             "user_name": request["user_name"],
@@ -151,17 +173,12 @@ def build_ai_payload(request: dict, historical_records: list[dict]) -> dict:
             "target_weekday": request["target_date"].strftime("%A"),
             "future_context": request["future_context"] or None,
         },
-        "historical_records": [
-            {
-                "record_date": record["record_date"].isoformat(),
-                "weekday": record["record_date"].strftime("%A"),
-                "food_item": record["food_item"],
-                "portions_prepared": record["portions_prepared"],
-                "portions_sold": record["portions_sold"],
-                "leftover_portions": record["portions_prepared"] - record["portions_sold"],
-                "past_context": record["past_context"] or None,
-            }
-            for record in historical_records
+        # The complete history is retained, but these focused groups make the
+        # intended weekday and recency comparisons explicit for Gemini.
+        "historical_records": [serialise_record(record) for record in ordered_records],
+        "same_weekday_records": [serialise_record(record) for record in same_weekday_records],
+        "recent_records": [
+            serialise_record(record) for record in ordered_records[-REQUIRED_SAME_WEEKDAY_RECORDS:]
         ],
         "rules_for_ai": {
             "minimum_history_for_normal_confidence": LOW_CONFIDENCE_RECORD_COUNT,

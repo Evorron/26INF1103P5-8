@@ -100,6 +100,8 @@ def generate_forecast(request: dict, historical_records: list[dict]) -> dict:
     )
     confidence = normalise_confidence(ai_response, len(historical_records))
     context_assessment = str(ai_response.get("context_assessment", "")).strip()
+    weekday_analysis = str(ai_response.get("weekday_analysis", "")).strip()
+    anomalies = normalise_anomalies(ai_response.get("anomalies_detected"))
     factors = normalise_factors(ai_response.get("factors_considered"))
     has_future_context = bool(request["future_context"].strip())
 
@@ -111,13 +113,18 @@ def generate_forecast(request: dict, historical_records: list[dict]) -> dict:
         "confidence": confidence,
         "reasoning": (
             f"Gemini supplied a demand-impact factor of {factor:.2f}. "
-            f"{context_assessment or 'The quantity applies that factor to historical sales.'}"
+            f"{context_assessment or 'The quantity applies that factor to historical sales.'} "
+            f"{weekday_analysis or 'No weekday-specific analysis was returned.'}"
         ),
         "business_advice": (
             f"Prepare {suggested_portions} portions, then compare sales and leftovers "
             "after service to refine future records."
         ),
         "factors_considered": factors,
+        # These explanatory details are displayed to the user, but never alter
+        # the quantity; logic_manager remains the numerical source of truth.
+        "weekday_analysis": weekday_analysis,
+        "anomalies_detected": anomalies,
         "evidence": [
             {
                 "metric": "record_count",
@@ -262,3 +269,10 @@ def normalise_factors(value: object) -> list[str]:
         if factors:
             return factors[:3]
     return ["Gemini demand-impact assessment"]
+
+
+def normalise_anomalies(value: object) -> list[str]:
+    """Keep a small list of readable, evidence-based anomaly statements."""
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()][:3]
+    return []
