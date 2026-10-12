@@ -8,7 +8,7 @@ load_dotenv()
 
 # Define default API URL endpoint and specific AI model to use
 DEFAULT_ENDPOINT = os.getenv("GEMINI_API_URL", "https://generativelanguage.googleapis.com/v1beta/interactions").strip()
-DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash").strip()
+DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.7-flash").strip()
 
 SYSTEM_INSTRUCTIONS = """
 You are Hawker AI, an intelligent F&B demand forecasting assistant.
@@ -78,15 +78,15 @@ def generate_forecast(
         "store": False,
     }
 
-# Set up HTTP headers for the API request, including authentication
+# Set up HTTP headers for the API request including authentication
     headers = {
         "x-goog-api-key": api_key,
         "Content-Type": "application/json"
     }
 
     try:
-# Send POST request to the Gemini API endpoint with 45 seconds timeout limit
-        response = requests.post(DEFAULT_ENDPOINT, headers=headers, json=request_body, timeout=45)
+# Send POST request to the Gemini API endpoint with 30 seconds timeout limit
+        response = requests.post(DEFAULT_ENDPOINT, headers=headers, json=request_body, timeout=30)
 
         if response.status_code == 200:
             result_body = response.json()
