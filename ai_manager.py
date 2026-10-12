@@ -85,8 +85,8 @@ def generate_forecast(
     }
 
     try:
-# Send POST request to the Gemini API endpoint with 20 seconds timeout limit
-        response = requests.post(DEFAULT_ENDPOINT, headers=headers, json=request_body, timeout=20)
+# Send POST request to the Gemini API endpoint with 45 seconds timeout limit
+        response = requests.post(DEFAULT_ENDPOINT, headers=headers, json=request_body, timeout=45)
 
         if response.status_code == 200:
             result_body = response.json()
