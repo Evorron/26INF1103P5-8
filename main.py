@@ -11,50 +11,19 @@ import logic_manager
 
 
 def collect_forecast_request() -> dict:
-    """Collect a usable forecast dictionary without changing the IO module."""
-    # Input_output_manager.collect_forecast_request is retained unchanged, so
-    # the coordinator gathers the same four fields in the shape logic_manager
-    # and forecast_adapter expect.
-    print("\nEnter forecast information")
-    return {
-        "user_name": io_manager.read_name("Your name: "),
-        "food_item": io_manager.read_words("Forecast food item: ", "Forecast food item"),
-        "target_date": io_manager.read_future_date("Target date (YYYY-MM-DD): "),
-        "future_context": io_manager.read_optional_context("Optional future context: "),
-    }
+    """Delegate forecast collection to the repaired IO module."""
+    return io_manager.collect_forecast_request()
 
 
 def add_sales_record() -> None:
-    """Validate a record before allowing the unchanged IO module to save it."""
-    # collect_sales_record currently writes the CSV itself when the user
-    # confirms.  Temporarily defer that one write so the logic-manager check
-    # happens first, without changing the IO module's source code.
-    original_save = io_manager.save_record_to_csv
-    original_business_cache = io_manager.registered_business.copy()
-    collected_record: dict | None = None
-
-    def defer_save(record: dict) -> None:
-        nonlocal collected_record
-        collected_record = record
-
-    io_manager.save_record_to_csv = defer_save
+    """Collect, validate, and then save one historical sales record."""
+    record = io_manager.collect_sales_record()
     try:
-        record = io_manager.collect_sales_record()
         logic_manager.validate_sales_record(record)
     except Exception:
-        # Do not leave a business-type cache entry for a record that failed
-        # validation and was therefore not written to the CSV file.
-        io_manager.registered_business.clear()
-        io_manager.registered_business.update(original_business_cache)
         raise
-    finally:
-        io_manager.save_record_to_csv = original_save
-
-    # The confirmation path always supplies a record; retain this guard in
-    # case the unchanged UI collection flow is altered later.
-    if collected_record is None:
-        raise RuntimeError("No sales record was confirmed for saving.")
-    original_save(collected_record)
+    io_manager.save_record_to_csv(record)
+    io_manager.registered_business[" ".join(record["user_name"].split()).lower()] = record["business_type"]
     print("Historical sales record saved and validated successfully!")
 
 
