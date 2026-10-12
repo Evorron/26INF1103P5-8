@@ -20,6 +20,8 @@ Analyze the provided historical sales records and future context for the food it
 Return ONLY a valid JSON object matching the requested schema.
 """.strip()
 
+# Defining the expected response schema for validation
+
 RESPONSE_SCHEMA = {
     "type": "object",
     "additionalProperties": False,
@@ -35,6 +37,10 @@ RESPONSE_SCHEMA = {
     "required": ["demand_impact_factor", "context_assessment", "confidence_score", "factors_considered"]
 }
 
+# demand_impact_factor: Numerical factor indicating the expected impact on demand (eg. 1.0 for norm day, 0.8 if heavy rain is expected)
+# context_assessment: reasoning behind the demand impact factor
+# confidence_score: how sure the AI is about its own prediction
+# factors_considered: list of factors that AI looked at to make its decision
 
 def generate_forecast(
     evidence_payload: dict,
