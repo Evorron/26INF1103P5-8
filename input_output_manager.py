@@ -9,6 +9,7 @@ from urllib import response
 
 def display_welcome():
     ##"Display opening program title"
+    print("\n")
     print("--------------------------------")
     print("Welcome to Hawker AI!")
     print("An enhance tools for food preparation forecasting.\n")
@@ -23,7 +24,7 @@ def display_all():
     print("4. View my records by food item and date range")
     print("5. Exit")
 
-    return input("Choose an option: ").strip()  ##"To prevent breaking due to typos"
+    return input("\nChoose an option: ").strip()  ##"To prevent breaking due to typos"
 
 
 registered_business = {} ##"Save "business_type" entires into a 'dictionary'" 
@@ -186,6 +187,7 @@ def show_items(items: list[str]):
     print("Recorded food items:")
     for item in items:
         print(f"- {item}")
+    print("\n")  ##"Add a new line for better readability"
 
 
 def show_records(records: list[dict]):
@@ -257,6 +259,7 @@ def show_records(records: list[dict]):
         for line in format_row(row):
             print(line)
         print(border)
+    print("\n")  ##"Add a new line for better readability"
 
 def record_preview(record: dict):
     ##Display recent new record before it is saved
@@ -278,7 +281,12 @@ def record_preview(record: dict):
 def show_forecast(response: dict):
     ##Show Gemini's forecast without changing its suggested portions."""
     print("\nForecast Recommendation\n")
-    print(f"Recorded sales history: {response['recorded_sales']}\n")
+    recorded_sales = response["recorded_sales"]
+    if recorded_sales:
+        average_recorded_sales = sum(recorded_sales) / len(recorded_sales)
+        print("Average recorded sales: " f"{average_recorded_sales:.1f} portions\n")
+    else:
+        print("Average recorded sales: Not available.\n")
     print(f"Suggested portions to prepare: " f"{response['suggested_portions']}")
     print(f"Confidence: {response['confidence'].title()}")
     print("\nReason:")
@@ -289,7 +297,7 @@ def show_forecast(response: dict):
     print("\nSuggested next step:")
     print(response["business_advice"])
     if response["warning"]:
-        print(f"Warning: {response['warning']}")
+        print(f"Warning: {response['warning']}\n")
 
 
 def check_positive_integer(prompt: int):

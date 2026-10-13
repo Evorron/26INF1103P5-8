@@ -26,7 +26,7 @@ def add_sales_record() -> None:
     # after the record has been accepted and saved successfully.
     normalised_name = " ".join(record["user_name"].split()).casefold()
     io_manager.registered_business[normalised_name] = record["business_type"]
-    print("Historical sales record saved successfully!")
+    print("Historical sales record saved successfully!\n")
 
 
 def generate_forecast() -> None:
@@ -79,8 +79,8 @@ def run() -> None:
             elif action == "4":
                 view_records()
             elif action == "5":
-                print("Exiting the programme...")
-                print("Thank you for using Hawker AI! Have a pleasant day ahead!")
+                print("\nExiting the programme...")
+                print("Thank you for using Hawker AI! Have a pleasant day ahead!\n")
                 return
             else:
                 print("Please choose an option from 1 to 5.")
@@ -89,7 +89,7 @@ def run() -> None:
         except RuntimeError as error:
             print(f"\nUnable to generate forecast: {error}\n")
         except KeyboardInterrupt:
-            print("\nGoodbye.")
+            print("\nExiting the programme...")
             return
 
 
