@@ -25,6 +25,35 @@ def display_all():
     return input("Choose an option: ").strip()  ##"To prevent breaking due to typos"
 
 
+registered_business = {} ##"Save "business_type" entires into a 'dictionary'" 
+
+
+def check_business_type(user_name: str, business_type: str):
+
+    ## "To check and match against existing users_name to it's business_type" 
+    normalized_name = " ".join(user_name.split()).lower()
+    registered_type = registered_business.get(normalized_name)
+
+    ## "Check 'sales_records.csv' if it's in memory"
+    if not registered_type:
+        data_path = Path(__file__).resolve().parent / "data" / "sales_records.csv"
+        if data_path.exists():
+            try:
+                with open(data_path, encoding="utf-8") as f:
+                    for row in csv.DictReader(f):
+                        ## "Compare normalized CSV name with normalized input"
+                        if " ".join(row.get("user_name", "").split()).lower() == normalized_name:
+                            registered_type = row.get("business_type")
+                            registered_business[normalized_name] = registered_type
+                            break
+            except Exception:
+                pass
+
+    if registered_type and business_type.lower() != registered_type.lower():
+        raise ValueError(f"Business type for {user_name} must be '{registered_type}'.")
+    ## "Raise an error if input business_type doesn't match the registered record"
+
+
 def collect_sales_record():
     ## "Collect a record, display it to the user and save or edit"
 
