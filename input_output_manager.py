@@ -272,3 +272,17 @@ def record_preview(record: dict):
     print(f"Sold: {record['portions_sold']}")
     print(f"Leftover: {leftovers}")
     print(f"Past context: {record['past_context']}")
+
+
+def show_forecast(response: dict):
+    ##Show Gemini's forecast without changing its suggested portions
+    print("\nGemini Forecast")
+    print(f"Suggested portions to prepare: {response['suggested_portions']}")
+    print(f"Confidence: {response['confidence'].title()}")
+    print(f"Reasoning: {response['reasoning']}")
+    print("Factors considered: " + ", ".join(response["factors_considered"]))
+    print("Verified evidence:")
+    for item in response["evidence"]:
+        print(f"- {item['claim']} ({item['metric']}: {item['value']})")
+    if response["warning"]:
+        print(f"Warning: {response['warning']}")
