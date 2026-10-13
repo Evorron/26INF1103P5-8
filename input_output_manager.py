@@ -286,3 +286,27 @@ def show_forecast(response: dict):
         print(f"- {item['claim']} ({item['metric']}: {item['value']})")
     if response["warning"]:
         print(f"Warning: {response['warning']}")
+
+
+def check_positive_integer(prompt: int):
+    ##Ensure each whole number = zero or greater then zero
+    while True:
+        try:
+            value = int(input(prompt).strip())
+            if value > -1:
+                return value
+        except ValueError:
+            pass
+        print("Enter a vaild number.")
+
+
+def check_sold_portions(prompt: int, portions_prepared: int):
+    ##Read 'sold portions' and compare them with 'prepared portions'
+    while True:
+        try:
+            value = int(input(prompt).strip())
+            if 0 <= value <= portions_prepared:
+                return value
+        except ValueError:
+            pass
+        print(f"Enter a whole number from 0 to {portions_prepared}.")
