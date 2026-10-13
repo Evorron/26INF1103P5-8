@@ -224,4 +224,35 @@ def show_records(records: list[dict]):
             terminal_width - fixed_width
         )
     )
-    widths.append(context_width)        
+    widths.append(context_width)
+    
+    def format_row(values: list[str]) -> list[str]:
+            ##Format a row, wrapping long text
+            wrapped = [
+                textwrap.wrap(str(v), width=widths[i], break_long_words=True, break_on_hyphens=False) or [""]
+                for i, v in enumerate(values)
+            ]
+            row_height = max(len(lines) for lines in wrapped)
+    
+            formatted_lines = []
+            for line_index in range(row_height):
+                cells = [
+                    lines[line_index].rjust(widths[i]) if i in (2, 3, 4) else lines[line_index].ljust(widths[i])
+                    if line_index < len(lines) else "".ljust(widths[i])
+                    for i, lines in enumerate(wrapped)
+                ]
+                ##Format for data display table
+                formatted_lines.append("| " + " | ".join(cells) + " |")
+            return formatted_lines
+    
+    border = "+" + "+".join("-" * (w + 2) for w in widths) + "+"
+    
+    print("\nMatching records")
+    print(border)
+    for line in format_row(headers):
+            print(line)
+    print(border)
+    for row in rows:
+            for line in format_row(row):
+                print(line)
+            print(border)            
