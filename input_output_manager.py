@@ -3,17 +3,18 @@ from datetime import date
 from pathlib import Path
 import shutil
 import textwrap
-import data_manager
+from urllib import response
 
 
-def show_welcome():
+
+def display_welcome():
     ##"Display opening program title"
     print("--------------------------------")
     print("Welcome to Hawker AI!")
     print("An enhance tools for food preparation forecasting.\n")
    
 
-def choose_action():
+def display_all():
     ##"Display main menu"
     print("------------MENU-----------------")
     print("1. Add a historical sales record")
@@ -21,10 +22,11 @@ def choose_action():
     print("3. List my recorded food items")
     print("4. View my records by food item and date range")
     print("5. Exit")
+
     return input("Choose an option: ").strip()  ##"To prevent breaking due to typos"
 
 
-registered_business = {} ##"Save business entires "business_type" into a 'dictionary'" 
+registered_business = {} ##"Save "business_type" entires into a 'dictionary'" 
 
 
 def check_business_type(user_name: str, business_type: str):
@@ -54,33 +56,40 @@ def check_business_type(user_name: str, business_type: str):
 
 
 def collect_sales_record():
-    ##Collect a record, display it to the user and save or edit
+    ## "Collect a record, display it to the user and save or edit"
 
     print("\nEnter historical sales information")
     user_name = input("Your name: ").strip()
-    business_type = input("Business type: ").strip()
-    
-    ##Validate business type consistency using the checking function
-    check_business_type(user_name, business_type)
+    while not user_name:
+        user_name = input("Your name: ").strip() ##Constantly prompt users-inputs
+
+    while True:
+            business_type = input("Business type: ").strip()
+            ##Validate business type consistency using the checking function
+            try:
+                check_business_type(user_name, business_type)
+                break
+            except ValueError as h:
+                print(h)
+                print("Error! Please try again..")
 
     record_date = read_historical_date("Record date (YYYY-MM-DD): ")
     food_item = input("Food item: ").strip()
-    portions_prepared = read_positive_integer("Portions prepared: ")
-    portions_sold = read_sold_portions("Portions sold: ", portions_prepared)
-    past_context = read_optional_context("Optional past context: ")
+    portions_prepared = check_positive_integer("Portions prepared: ")
+    portions_sold = check_sold_portions("Portions sold: ", portions_prepared)
+    past_context = input("Optional past context: ").strip()
 
 
     record={"user_name": user_name, "business_type": business_type, "record_date" : record_date, 
              "food_item": food_item, "portions_prepared": portions_prepared, "portions_sold": portions_sold,
-             "past_context": past_context}
+             "past_context": past_context}  ## "Utilising dictionary"
 
 
     while True:
-        show_record_preview(record)
+        record_preview(record)
 
-        choice = input(
-            "Enter C to confirm and save, or E to edit: "
-        ).strip().lower()
+        choice = input("Enter C to confirm and save, or E to edit: ").strip().lower()
+            ## "Prompt users selection enter C to confirm and save, or E to edit"
 
         if choice == "c":
             return record
@@ -96,9 +105,8 @@ def collect_sales_record():
             print("Please enter C or E.")
             
 
-
 def edit_sales_record(record: dict):
-    ##To allow users to edits it's records
+    ## To allow users to edits it's records
     print("\nWhich detail would you like to edit?")
     print("1. Name")
     print("2. Business type")
@@ -109,52 +117,54 @@ def edit_sales_record(record: dict):
     print("7. Past context")
     choice = input("Choose 1 to 7: ").strip()
 
+    ## Listed the option 1-7
     if choice == "1":
-        record["user_name"] = input(str("Your name: "))
+        record["user_name"] = input("Your name: ").strip()
     elif choice == "2":
-        record["business_type"] = input(str("Business type: ", "Business type"))
+        record["business_type"] = input("business_type: ").strip()
     elif choice == "3":
         record["record_date"] = read_historical_date("Record date (YYYY-MM-DD): ")
     elif choice == "4":
-        record["food_item"] = input(str("Food item: ", "Food item"))
+        record["food_item"] = input("Food item: ").strip()
     elif choice == "5":
-        record["portions_prepared"] = read_positive_integer("Portions prepared: ")
+        record["portions_prepared"] = check_positive_integer("Portions prepared: ")
         while record["portions_sold"] > record["portions_prepared"]:
-            print("Portions sold cannot be greater than portions prepared.")
-            record["portions_sold"] = read_sold_portions(
+            print("Portions sold cannot be greater than portions prepared")
+            record["portions_sold"] = check_sold_portions(
                 "Portions sold: ", record["portions_prepared"]
             )
     elif choice == "6":
-        record["portions_sold"] = read_sold_portions(
+        record["portions_sold"] = check_sold_portions(
             "Portions sold: ", record["portions_prepared"]
         )
     elif choice == "7":
-        record["past_context"] = read_optional_context("Optional past context: ")
+        record["past_context"] = input("Optional past context: ").strip()
     else:
         print("Please choose a number from 1 to 7.")
 
 
-def collect_forecast_request():
-    ##Collect the details that are known before preparing food
-
+def collect_forecast_infomation() -> dict:
+    ## "Collect known infomation before preparing food"
     print("\nEnter forecast information")
-    
-    user_name=input(str("Your name: ")),
-    food_item=input(str("Forecast food item: ", "Forecast food item")),
-    target_date=read_future_date("Target date (YYYY-MM-DD): "),
-    future_context=read_optional_context("Optional future context: "),
 
-    return collect_forecast_request
+    return {
+        "user_name": input("Your name: ").strip(),
+        "food_item": input("Forecast food item: ").strip(),
+        "target_date": read_future_date(
+            "Target date (YYYY-MM-DD): "
+        ),
+        "future_context": input("Optional context: ").strip(),
+    }
 
 
 def collect_record_search():
-    """Collect filters for viewing saved historical records."""
+    ##"Viewing historical records"
     print("\nView historical records")
 
     user_name = input("Your name: ").strip()
-    food_item = input("Food item: ", "Food item").strip()
+    food_item = input("Food item: ").strip()
 
-    ##Starting date and End date to ensure it's a valid past-present date
+    ## "Ensure Starting date must be before End date to ensure it's valid"
     start_date = read_historical_date("Start date (YYYY-MM-DD): ")
     while True:
         end_date = read_historical_date("End date (YYYY-MM-DD): ")
@@ -165,13 +175,13 @@ def collect_record_search():
                 "start_date": start_date,
                 "end_date": end_date,
             }
-        print("End date cannot be earlier than the start date.")
+        print("End date cannot be earlier than the start date")
 
 
 def show_items(items: list[str]):
-    ##Display saved food items saved
+    ##Display saved food items
     if not items:
-        print("No food items have been recorded for this name.")
+        print("No food items have been recorded for this name")
         return
     print("Recorded food items:")
     for item in items:
@@ -181,12 +191,12 @@ def show_items(items: list[str]):
 def show_records(records: list[dict]):
     ##Display all records that match the selected item and dates
     if not records:
-        print("No records were found for that food item and date range.")
+        print("No records were found for that food item and date range")
         return
 
     headers = ["Date", "Food item", "Prepared", "Sold", "Leftover", "Past context"]
     
-    # Build rows cleanly using a list comprehension
+    ## Build rows cleanly using a list comprehension
     rows = [
         [
             r["record_date"].isoformat(),
@@ -199,13 +209,13 @@ def show_records(records: list[dict]):
         for r in records
     ]
 
-    # Calculate widths for every column except Past context
+    ## Calculate widths for every column except Past context
     widths = [
         max(len(headers[i]), max(len(row[i]) for row in rows))
         for i in range(len(headers) - 1)
     ]
 
-    # Fit the Past context column to the available terminal width
+    ## Fit the Past context column to the available terminal width
     terminal_width = shutil.get_terminal_size(fallback=(120, 20)).columns
     fixed_width = sum(widths) + 3 * len(headers) + 1
     context_width = max(
@@ -218,7 +228,7 @@ def show_records(records: list[dict]):
     widths.append(context_width)
 
     def format_row(values: list[str]) -> list[str]:
-        """Format a row, wrapping long text onto additional lines."""
+        ##Format a row, wrapping long text
         wrapped = [
             textwrap.wrap(str(v), width=widths[i], break_long_words=True, break_on_hyphens=False) or [""]
             for i, v in enumerate(values)
@@ -232,6 +242,7 @@ def show_records(records: list[dict]):
                 if line_index < len(lines) else "".ljust(widths[i])
                 for i, lines in enumerate(wrapped)
             ]
+            ##Format for data display table
             formatted_lines.append("| " + " | ".join(cells) + " |")
         return formatted_lines
 
@@ -247,36 +258,42 @@ def show_records(records: list[dict]):
             print(line)
         print(border)
 
-def show_record_preview(record: dict):
-    ##Show a new record before it is saved
+def record_preview(record: dict):
+    ##Display recent new record before it is saved
     leftovers = record["portions_prepared"] - record["portions_sold"]
-    print("\nPlease check this record")
+
+    print("Please check the details of the following record: ")
     print(f"Name: {record['user_name']}")
     print(f"Business type: {record['business_type']}")
     print(f"Date: {record['record_date'].isoformat()}")
+    ##"iso" dateformat
+
     print(f"Food item: {record['food_item']}")
     print(f"Prepared: {record['portions_prepared']}")
     print(f"Sold: {record['portions_sold']}")
     print(f"Leftover: {leftovers}")
-    print(f"Past context: {record['past_context'] or '-'}")
+    print(f"Past context: {record['past_context']}")
 
 
 def show_forecast(response: dict):
     ##Show Gemini's forecast without changing its suggested portions."""
-    print("\nGemini Forecast")
-    print(f"Suggested portions to prepare: {response['suggested_portions']}")
+    print("\nForecast Recommendation\n")
+    print(f"Recorded sales history: {response['recorded_sales']}\n")
+    print(f"Suggested portions to prepare: " f"{response['suggested_portions']}")
     print(f"Confidence: {response['confidence'].title()}")
-    print(f"Reasoning: {response['reasoning']}")
-    print("Factors considered: " + ", ".join(response["factors_considered"]))
-    print("Verified evidence:")
+    print("\nReason:")
+    print(response["reasoning"])
+    print("\nVerified evidence:")
     for item in response["evidence"]:
         print(f"- {item['claim']} ({item['metric']}: {item['value']})")
+    print("\nSuggested next step:")
+    print(response["business_advice"])
     if response["warning"]:
         print(f"Warning: {response['warning']}")
 
 
-def read_positive_integer(prompt: str):
-    ##Ensure each whole number greater than zero
+def check_positive_integer(prompt: int):
+    ##Ensure each whole number = zero or greater then zero
     while True:
         try:
             value = int(input(prompt).strip())
@@ -287,8 +304,8 @@ def read_positive_integer(prompt: str):
         print("Enter a vaild number.")
 
 
-def read_sold_portions(prompt: int, portions_prepared: int):
-    ##Read sold portions and compare them with prepared portions
+def check_sold_portions(prompt: int, portions_prepared: int):
+    ##Read 'sold portions' and compare them with 'prepared portions'
     while True:
         try:
             value = int(input(prompt).strip())
@@ -325,71 +342,3 @@ def read_date(prompt: date):
         except ValueError:
             print("Enter the date in YYYY-MM-DD format.")
 
-
-def read_optional_context(prompt: str):
-    ##"Read optional notes and immediately enforce the word limit" 
-    while True:
-        value = input(prompt).strip()
-        if len(value.split()):
-            return value
-
-        else:
-            break
-
-
-show_welcome()
-while True:
-        action = choose_action()
-        try:
-            if action == "1":
-                record = collect_sales_record()
-
-                # Save the confirmed record through Data Manager
-                data_manager.add_record(
-                    data_manager.RECORDS_FILE,
-                    record
-                )
-                # Update the business-type cache only after saving succeeds
-                normalized_name = " ".join(
-                    record["user_name"].split()
-                ).casefold()
-
-                registered_business[normalized_name] = record["business_type"]
-
-                print("Historical sales record saved successfully!")
-
-            elif action == "2":
-                request = collect_forecast_request()
-                print("Forecast request collected successfully!")
-            elif action == "3":
-                user_name = input("Your name: ").strip()
-
-                items = data_manager.item_names_for_user(
-                    data_manager.RECORDS_FILE,
-                    user_name
-                )
-                show_items(items)
-                
-            elif action == "4":
-                search_filters = collect_record_search()
-
-                records = data_manager.records_in_date_range(
-                    data_manager.RECORDS_FILE,
-                    search_filters["user_name"],
-                    search_filters["food_item"],
-                    search_filters["start_date"],
-                    search_filters["end_date"],
-                )
-
-                show_records(records)
-
-            elif action == "5":
-                print("bye-bye")
-                break
-            else:
-                print("Please choose an option from 1 to 5.")
-        except ValueError as error:
-            print(f"\nUnable to continue: {error}\n")
-        except KeyboardInterrupt:
-            print("\nGoodbye.")
-            break

@@ -1,0 +1,21 @@
+user_name,business_type,record_date,food_item,portions_prepared,portions_sold,past_context
+test,Beverage,2025-10-11,Ice Coffee,60,30,None
+test,Beverage,2025-08-08,Ice Coffee,70,20,None
+James,Beverage,2026-10-01,Ice Coffee,90,0,None
+test,Beverage,2026-01-20,Ice Coffee,40,10,
+John-Doe,Hawker,2026-01-10,Noodles,50,40,Heavy Rain
+John-Doe,Hawker,2026-02-20,Noodles,90,10,
+test,Beverage,2025-10-12,Ice Coffee,80,70,Holiday
+test,Beverage,2026-07-07,Ice Coffee,1000,40,"school holiday with alot of concerts, but low crowd"
+test,Beverage,2026-03-20,Ice Coffee,70,55,
+test,Beverage,2025-06-10,Ice Coffee,120,80,
+test,Beverage,2026-10-05,Iec Coffee,70,40,
+test,Beverage,2026-09-28,Ice Coffee,100,80,
+test,Beverage,2026-09-21,Ice Coffee,120,90,
+test,Beverage,2026-09-14,Ice Coffee,200,150,
+test,Beverage,2026-09-07,Ice Coffee,120,98,
+test,Beverage,2026-08-31,Ice Coffee,70,20,
+test,Beverage,2026-08-24,Ice Coffee,90,50,
+test,Beverage,2026-08-17,Ice Coffee,97,40,
+test,Beverage,2026-08-10,Ice Coffee,80,10,
+test,Beverage,2026-10-12,Ice Coffee,260,140,

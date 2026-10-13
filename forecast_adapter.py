@@ -1,21 +1,14 @@
-"""Bridge the original demand-factor AI manager to the app forecast contract.
+"""Translate an AI demand factor into a complete, validated forecast.
 
-This module deliberately leaves ``ai_manager.py`` unchanged. That module
-returns an AI demand-impact factor, while the rest of the app requires one
-complete, validated preparation forecast. The adapter keeps that translation
-isolated instead of mixing it into AI access, business rules, or the UI.
+The AI manager returns an estimate of how demand may change.  This module
+combines that factor with saved sales history to calculate a portion quantity,
+create the response expected by the display layer, and ask the logic manager
+to verify every safety rule before returning it.  It also records safe request
+and outcome details through the activity logger.
+
+This separation keeps AI communication, business rules, CSV handling, and
+screen output in their respective modules.
 """
-
-# This file turns Gemini's demand factor into a full preparation forecast.
-# It calculates a suggested quantity from past sales, adds display details,
-# and sends the result through the project safety checks.
-#
-# Program flow:
-# 1. generate_logged_forecast receives data from main.py.
-# 2. logic_manager filters and validates the relevant sales records.
-# 3. ai_manager returns a demand-impact factor from Gemini (or a fallback).
-# 4. This adapter converts the factor into a portion quantity and validates it.
-# 5. activity_logger writes a safe audit entry without storing API credentials.
 
 from math import ceil, floor, isfinite
 from pathlib import Path
@@ -27,22 +20,23 @@ import ai_manager
 import logic_manager
 
 
-# Public application integration point
+# Public integration point: this is the function other modules should call.
 
 def generate_logged_forecast(
     request: dict, all_records: list[dict], log_path: Path | None = None
 ) -> dict:
-    """Validate, log, and generate one forecast for the command-line application.
+    """Produce one safe forecast and record its request and final outcome.
 
-    ``generate_forecast`` below is the original adapter implementation.  It is
-    retained as the focused AI-to-forecast conversion step; this new wrapper
-    connects it to the logic manager and activity logger.
+    It selects only the requested item's history, creates an evidence payload,
+    records a request event, builds a validated response, then records the
+    exact response returned to the user.  Errors are logged before being passed
+    to the application coordinator for user-friendly handling.
     """
     # Work only with the requested user's records for the requested food item;
     # unrelated sales must never influence this forecast.
     historical_records = logic_manager.records_for_forecast(request, all_records)
     evidence_payload = logic_manager.build_ai_payload(request, historical_records)
-    # The ID links the request and response entries in the JSON-lines log.
+    # The ID links the request, response, and any error entries in one log flow.
     activity_id = str(uuid4())
     resolved_log_path = log_path or Path(__file__).resolve().parent / "data" / "forecast_activity.jsonl"
     activity_logger.initialise_log(resolved_log_path)
@@ -51,13 +45,14 @@ def generate_logged_forecast(
         activity_id,
         ai_manager.DEFAULT_MODEL,
         evidence_payload,
-        validation_feedback=None,
-        provider_attempt=1,
     )
     try:
-        # The original adapter builds the user-facing response and asks the
-        # logic manager to verify all guardrails before returning it.
-        response = generate_forecast(request, historical_records)
+        # Build the display-ready response and verify it before returning it.
+        response = build_validated_forecast(
+            request,
+            historical_records,
+            evidence_payload,
+        )
     except (RuntimeError, ValueError, KeyError, TypeError) as error:
         activity_logger.log_error(
             resolved_log_path,
@@ -69,24 +64,35 @@ def generate_logged_forecast(
         )
         raise
 
-    # Logging after validation ensures the recorded result is exactly what the
-    # user was shown, rather than an unvalidated intermediate AI response.
+    # Log after validation so the recorded result exactly matches what was shown.
     activity_logger.log_response(
         resolved_log_path,
         activity_id,
         ai_manager.DEFAULT_MODEL,
-        interaction_id=None,
-        response=response,
+        response,
     )
     return response
 
 
-# Original adapter implementation (called by generate_logged_forecast)
+# Internal conversion step used by ``generate_logged_forecast``.
 
-def generate_forecast(request: dict, historical_records: list[dict]) -> dict:
-    """Ask the unchanged AI manager for a factor and create a validated forecast."""
-    # Main flow: prepare data, get Gemini's factor, build a forecast, then validate it.
-    evidence_payload = logic_manager.build_ai_payload(request, historical_records)
+def build_validated_forecast(
+    request: dict,
+    historical_records: list[dict],
+    evidence_payload: dict | None = None,
+) -> dict:
+    """Convert the AI response into a guarded, display-ready forecast.
+
+    A provided payload is reused to avoid rebuilding identical evidence.  When
+    the AI service is unavailable, the function returns a clearly labelled
+    median-sales fallback instead of presenting it as an AI response.
+    """
+    if evidence_payload is None:
+        evidence_payload = logic_manager.build_ai_payload(
+            request,
+            historical_records,
+        )
+
     ai_response = ai_manager.generate_forecast(evidence_payload)
     if ai_response.get("status") != "success":
         # An unavailable API should not crash the app.  Use a conservative,
@@ -98,24 +104,62 @@ def generate_forecast(request: dict, historical_records: list[dict]) -> dict:
     evidence_metrics = logic_manager.calculate_evidence_metrics(
         historical_records, request["target_date"]
     )
-    confidence = normalise_confidence(ai_response, len(historical_records))
-    context_assessment = str(ai_response.get("context_assessment", "")).strip()
-    weekday_analysis = str(ai_response.get("weekday_analysis", "")).strip()
-    anomalies = normalise_anomalies(ai_response.get("anomalies_detected"))
-    factors = normalise_factors(ai_response.get("factors_considered"))
-    has_future_context = bool(request["future_context"].strip())
+    confidence = normalise_confidence(
+        ai_response,
+        len(historical_records),
+    )
+
+    context_assessment = str(
+        ai_response.get("context_assessment", "")
+    ).strip()
+
+    weekday_analysis = str(
+        ai_response.get("weekday_analysis", "")
+    ).strip()
+
+    data_limitations = str(
+        ai_response.get("data_limitations", "")
+    ).strip()
+
+    factors = normalise_factors(
+        ai_response.get("factors_considered")
+    )
+
+    reasoning_parts = [
+        context_assessment
+        or "The recommendation begins with your usual recorded sales."
+    ]
+
+    if weekday_analysis:
+        reasoning_parts.append(weekday_analysis)
+
+    if data_limitations:
+        reasoning_parts.append(data_limitations)
+
+    if factors:
+        reasoning_parts.append(
+            "This recommendation considered: "
+            + "; ".join(factors)
+            + "."
+        )
+
+    reasoning = "\n".join(
+        f"• {item}"
+        for item in reasoning_parts
+    )
+
+    has_future_context = bool(
+        request["future_context"].strip()
+    )
 
     # This response shape is shared with show_forecast in the IO layer and
     # validate_ai_response in the logic layer.  Extra fields record why an
     # exception to the usual weekday guardrail may be permitted.
     response = {
         "suggested_portions": suggested_portions,
+        "recorded_sales": [record["portions_sold"] for record in historical_records],
         "confidence": confidence,
-        "reasoning": (
-            f"Gemini supplied a demand-impact factor of {factor:.2f}. "
-            f"{context_assessment or 'The quantity applies that factor to historical sales.'} "
-            f"{weekday_analysis or 'No weekday-specific analysis was returned.'}"
-        ),
+        "reasoning": reasoning,
         "business_advice": (
             f"Prepare {suggested_portions} portions, then compare sales and leftovers "
             "after service to refine future records."
@@ -124,7 +168,6 @@ def generate_forecast(request: dict, historical_records: list[dict]) -> dict:
         # These explanatory details are displayed to the user, but never alter
         # the quantity; logic_manager remains the numerical source of truth.
         "weekday_analysis": weekday_analysis,
-        "anomalies_detected": anomalies,
         "evidence": [
             {
                 "metric": "record_count",
@@ -161,7 +204,11 @@ def generate_forecast(request: dict, historical_records: list[dict]) -> dict:
 
 
 def baseline_fallback_forecast(request: dict, historical_records: list[dict]) -> dict:
-    """Return a low-confidence median-sales forecast when Gemini is unavailable."""
+    """Return a low-confidence median-sales forecast when the AI is unavailable.
+
+    Future context is deliberately ignored because no AI assessment was
+    received.  The normal logic-manager validation still applies to the result.
+    """
     # This local fallback makes a useful forecast without sending another API
     # request.  It deliberately ignores future context because Gemini was not
     # available to assess the likely impact of that context.
@@ -172,6 +219,7 @@ def baseline_fallback_forecast(request: dict, historical_records: list[dict]) ->
     )
     response = {
         "suggested_portions": suggested_portions,
+        "recorded_sales": [record["portions_sold"] for record in historical_records],
         "confidence": "low",
         "reasoning": (
             "Gemini is unavailable, so this forecast uses the middle value "
@@ -211,50 +259,55 @@ def baseline_fallback_forecast(request: dict, historical_records: list[dict]) ->
     return response
 
 
-# AI response normalisation and quantity calculation
+# Helper functions for checking AI values and calculating a safe quantity.
 
 def valid_demand_factor(ai_response: dict) -> float:
-    """Validate the factor supplied by the unchanged AI manager."""
-    # Gemini's factor must be a real positive number before it affects the quantity.
+    """Return a valid positive AI demand factor, capped by the project maximum."""
+    # A malformed or extreme AI value must not influence a preparation quantity.
     try:
-        factor = float(ai_response["demand_impact_factor"])
-    except (KeyError, TypeError, ValueError) as error:
-        raise RuntimeError("Gemini returned no usable demand-impact factor.") from error
-    if not isfinite(factor) or factor <= 0:
-        raise RuntimeError("Gemini returned an invalid demand-impact factor.")
-    return min(factor, logic_manager.MAXIMUM_MULTIPLIER)
+        factor = float(ai_response.get("demand_impact_factor", 1.0))
+    except (TypeError, ValueError):
+        return 1.0
 
+    return max(
+        logic_manager.MINIMUM_DEMAND_FACTOR,
+        min(factor, logic_manager.MAXIMUM_MULTIPLIER),
+    )
 
 def quantity_from_factor(factor: float, request: dict, historical_records: list[dict]) -> int:
-    """Apply Gemini's factor to median demand, while retaining local guardrails."""
-    # Use typical past sales as the baseline, then keep the quantity within safe limits.
+    """Apply a demand factor to typical sales while enforcing local quantity limits.
+
+    Median sales provide the baseline because one unusually busy or quiet day
+    has less influence than it would in a simple average.  A maximum based on
+    observed sales and, when available, a target-weekday range prevent extreme
+    recommendations.
+    """
     sales = [record["portions_sold"] for record in historical_records]
+    typical_sales = median(sales)
     historical_maximum = max(sales)
     if historical_maximum == 0:
         raise RuntimeError("A positive forecast cannot be produced because all saved sales are zero.")
 
-    # Median sales are less affected by an unusually busy or quiet single day
-    # than a simple average.  Gemini's factor is applied to that typical value.
-    quantity = max(1, round(median(sales) * factor))
-    maximum_allowed = floor(historical_maximum * logic_manager.MAXIMUM_MULTIPLIER)
-    quantity = min(quantity, maximum_allowed)
-    same_weekday_sales = [
-        record["portions_sold"]
-        for record in historical_records
-        if record["record_date"].weekday() == request["target_date"].weekday()
-    ]
+    # Gemini's factor is applied only after a robust historical baseline exists.
+    quantity = max(1, round(typical_sales * factor))
+    minimum_allowed = max(1,ceil(typical_sales * logic_manager.MINIMUM_RECOMMENDATION_RATIO),)
+    maximum_allowed = floor(historical_maximum* logic_manager.MAXIMUM_MULTIPLIER)
+    quantity = max(minimum_allowed,min(quantity, maximum_allowed),)
+    same_weekday_sales = [record["portions_sold"] for record in historical_records if record["record_date"].weekday() == request["target_date"].weekday()]
     if len(same_weekday_sales) >= logic_manager.REQUIRED_SAME_WEEKDAY_RECORDS:
         weekday_average = sum(same_weekday_sales[-logic_manager.REQUIRED_SAME_WEEKDAY_RECORDS:]) / 4
         if weekday_average > 0 and not request["future_context"].strip():
             # Without a supplied reason for a change, keep the quantity within
             # ±50% of the recent target-weekday average.
-            quantity = max(ceil(weekday_average * 0.5), min(quantity, floor(weekday_average * 1.5)))
+            weekday_minimum = max(1,ceil(weekday_average* logic_manager.MINIMUM_RECOMMENDATION_RATIO),)
+            weekday_maximum = floor( weekday_average* logic_manager.MAXIMUM_MULTIPLIER)
+            quantity = max(weekday_minimum,min(quantity, weekday_maximum),)
     return quantity
 
 
 def normalise_confidence(ai_response: dict, record_count: int) -> str:
-    """Keep Gemini's label when valid, enforcing low confidence for short history."""
-    # Limited sales history always means the forecast should be labelled low confidence.
+    """Return a recognised confidence label, forcing low confidence for short history."""
+    # Limited history is uncertain even when the AI gives a more optimistic label.
     if record_count < logic_manager.LOW_CONFIDENCE_RECORD_COUNT:
         return "low"
     confidence = str(ai_response.get("confidence_score", "medium")).lower().strip()
@@ -262,17 +315,10 @@ def normalise_confidence(ai_response: dict, record_count: int) -> str:
 
 
 def normalise_factors(value: object) -> list[str]:
-    """Return concise non-empty factors suitable for the display layer."""
-    # Keep the displayed reasons short and provide a fallback when Gemini gives none.
+    """Return up to three readable factors for display, with a fallback message."""
+    # Keep display content concise and avoid an empty factors section.
     if isinstance(value, list):
         factors = [str(item).strip() for item in value if str(item).strip()]
         if factors:
             return factors[:3]
     return ["Gemini demand-impact assessment"]
-
-
-def normalise_anomalies(value: object) -> list[str]:
-    """Keep a small list of readable, evidence-based anomaly statements."""
-    if isinstance(value, list):
-        return [str(item).strip() for item in value if str(item).strip()][:3]
-    return []

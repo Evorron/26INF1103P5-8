@@ -1,0 +1,13 @@
+user_name,food_item,forecast_date,recommended_portions,reason
+test,Ice Coffee,2026-10-14,50,"Gemini is unavailable, so this forecast uses the middle value of the saved sales records without an AI adjustment."
+test,Ice Coffee,2026-10-16,50,"Gemini supplied a demand-impact factor of 1.00. No external events or special conditions are specified for the target date. Demand is expected to remain around baseline levels, supported by stable recent overall sales performance. No weekday-specific analysis was returned."
+test,Ice Coffee,2026-10-19,53,"Gemini is unavailable, so this forecast uses the middle value of the saved sales records without an AI adjustment."
+test,Ice Coffee,2026-10-19,53,"Gemini is unavailable, so this forecast uses the middle value of the saved sales records without an AI adjustment."
+test,Ice Coffee,2026-10-19,53,"Gemini is unavailable, so this forecast uses the middle value of the saved sales records without an AI adjustment."
+test,Ice Coffee,2026-10-19,53,"Gemini is unavailable, so this forecast uses the middle value of the saved sales records without an AI adjustment."
+test,Ice Coffee,2026-10-19,53,"Gemini supplied a demand-impact factor of 1.00. No future context was provided. Therefore, the recommendation is based purely on historical sales patterns, representing neutral expected demand relative to established trends. Monday sales show two distinct phases: August sales were lower (ranging from 10 to 50 portions sold), while September sales rose considerably (ranging between 80 and 150 portions sold, averaging approximately 105 portions over the last four Mondays)."
+test,Ice Coffee,2026-10-19,53,"Gemini is unavailable, so this forecast uses the middle value of the saved sales records without an AI adjustment."
+test,Ice Coffee,2026-10-19,53,"Gemini is unavailable, so this forecast uses the middle value of the saved sales records without an AI adjustment."
+test,Ice Coffee,2026-10-19,53,"Gemini is unavailable, so this forecast uses the middle value of the saved sales records without an AI adjustment."
+test,Ice Coffee,2026-10-19,53,"Gemini is unavailable, so this forecast uses the middle value of the saved sales records without an AI adjustment."
+test,Ice Coffee,2026-10-19,53,"Gemini is unavailable, so this forecast uses the middle value of the saved sales records without an AI adjustment."
