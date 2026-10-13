@@ -53,39 +53,6 @@ def check_business_type(user_name: str, business_type: str):
         raise ValueError(f"Business type for {user_name} must be '{registered_type}'.")
     ## "Raise an error if input business_type doesn't match the registered record"
 
-def save_record_to_csv(record: dict):
-    ## "Append a confirmed sales record to sales_records.csv"
-    data_path = Path(__file__).resolve().parent / "data" / "test_records.csv"
-    data_path.parent.mkdir(parents=True, exist_ok=True)
-    file_exists = data_path.exists()
-
-    with open(data_path, mode="a", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=record.keys())
-        if not file_exists:
-            writer.writeheader()
-        
-        ## "Convert date object for CSV storage"
-        row_data = record.copy()
-        row_data["record_date"] = record["record_date"].isoformat()
-        writer.writerow(row_data)
-
-
-
-def load_records_from_csv():
-    ## "load and parse all sales records from sales_records.csv"
-    data_path = Path(__file__).resolve().parent / "data" / "sales_records.csv"
-    if not data_path.exists():
-        return []
-    
-    records = []
-    with open(data_path, encoding="utf-8") as f:
-        for row in csv.DictReader(f):
-            row["portions_prepared"] = int(row["portions_prepared"])
-            row["portions_sold"] = int(row["portions_sold"])
-            row["record_date"] = date.fromisoformat(row["record_date"])
-            records.append(row)
-    return records
-
 
 def collect_sales_record():
     ## "Collect a record, display it to the user and save or edit"
@@ -187,3 +154,24 @@ def collect_forecast_infomation():
     ## "Basic Information to be forecast"
 
     return collect_forecast_infomation
+
+
+def collect_record_search():
+    ##"Viewing historical records"
+    print("\nView historical records")
+
+    user_name = input("Your name: ").strip()
+    food_item = input("Food item: ").strip()
+
+    ## "Ensure Starting date must be before End date to ensure it's valid"
+    start_date = read_historical_date("Start date (YYYY-MM-DD): ")
+    while True:
+        end_date = read_historical_date("End date (YYYY-MM-DD): ")
+        if end_date >= start_date:
+            return {
+                "user_name": user_name,
+                "food_item": food_item,
+                "start_date": start_date,
+                "end_date": end_date,
+            }
+        print("End date cannot be earlier than the start date")
