@@ -175,3 +175,53 @@ def collect_record_search():
                 "end_date": end_date,
             }
         print("End date cannot be earlier than the start date")
+
+
+def show_items(items: list[str]):
+    ##Display saved food items
+    if not items:
+        print("No food items have been recorded for this name")
+        return
+    print("Recorded food items:")
+    for item in items:
+        print(f"- {item}")
+
+
+def show_records(records: list[dict]):
+    ##Display all records that match the selected item and dates
+    if not records:
+        print("No records were found for that food item and date range")
+        return
+
+    headers = ["Date", "Food item", "Prepared", "Sold", "Leftover", "Past context"]
+    
+    ## Build rows cleanly using a list comprehension
+    rows = [
+        [
+            r["record_date"].isoformat(),
+            r["food_item"],
+            str(r["portions_prepared"]),
+            str(r["portions_sold"]),
+            str(r["portions_prepared"] - r["portions_sold"]),
+            r["past_context"] or "-"
+        ]
+        for r in records
+    ]
+
+    ## Calculate widths for every column except Past context
+    widths = [
+        max(len(headers[i]), max(len(row[i]) for row in rows))
+        for i in range(len(headers) - 1)
+    ]
+
+    ## Fit the Past context column to the available terminal width
+    terminal_width = shutil.get_terminal_size(fallback=(120, 20)).columns
+    fixed_width = sum(widths) + 3 * len(headers) + 1
+    context_width = max(
+        12,
+        min(
+            max(len(headers[-1]), max(len(row[-1]) for row in rows)),
+            terminal_width - fixed_width
+        )
+    )
+    widths.append(context_width)        
