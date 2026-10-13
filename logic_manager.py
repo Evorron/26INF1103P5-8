@@ -20,6 +20,8 @@ LOW_CONFIDENCE_RECORD_COUNT = 7
 # Forecast safety rules.  They limit unusually high recommendations unless
 # there is sufficient weekday history, a genuine historical shift, or context.
 MAXIMUM_MULTIPLIER = 1.5
+MINIMUM_DEMAND_FACTOR = 0.75
+MINIMUM_RECOMMENDATION_RATIO = 0.75
 WEEKDAY_DEVIATION_LIMIT = 0.50
 REQUIRED_SAME_WEEKDAY_RECORDS = 4
 HISTORICAL_SHIFT_THRESHOLD = 0.20
