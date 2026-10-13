@@ -156,6 +156,7 @@ def build_validated_forecast(
     # validate_ai_response in the logic layer.  Extra fields record why an
     # exception to the usual weekday guardrail may be permitted.
     response = {
+        "forecast_method": "gemini_ai",
         "suggested_portions": suggested_portions,
         "recorded_sales": [record["portions_sold"] for record in historical_records],
         "confidence": confidence,
@@ -218,6 +219,7 @@ def baseline_fallback_forecast(request: dict, historical_records: list[dict]) ->
         historical_records, request["target_date"]
     )
     response = {
+        "forecast_method": "historical_baseline",
         "suggested_portions": suggested_portions,
         "recorded_sales": [record["portions_sold"] for record in historical_records],
         "confidence": "low",
