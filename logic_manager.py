@@ -1,26 +1,19 @@
-"""Business rules and forecast guardrails for Hawker AI.
+"""Central business rules for Hawker AI.
 
-The module deliberately has five public operations, arranged in the order the
-application uses them: validate inputs, prepare Gemini data, calculate facts,
-and validate Gemini's completed forecast. It verifies AI output but never
-silently changes an AI recommendation.
+This module is the single source of truth for validation and forecast safety.
+It checks sales records and forecast requests, selects the relevant historical
+records, prepares factual evidence for the AI manager, and verifies the final
+forecast.  It never reads files, prints menus, calls an API, or saves data.
+
+Keeping these rules in one module means the same checks apply to interactive
+input today and imported CSV records in a future version of the program.
 """
-
-# This file is the project's rule checker. It validates user input, prepares
-# sales facts for Gemini, and checks that the final forecast follows the
-# project limits before it can be shown to the user.
-#
-# Program flow:
-# 1. main.py supplies records or a forecast request.
-# 2. This module validates and filters the data.
-# 3. forecast_adapter.py receives only valid, relevant records.
-# 4. This module checks the adapter's completed response before it is displayed.
 
 from datetime import date
 from math import floor
 
 
-# Input-quality rules used for both interactive input and future data sources.
+# Input-quality rules used for interactive input and future data imports.
 CONTEXT_WORD_LIMIT = 150
 LOW_CONFIDENCE_RECORD_COUNT = 7
 
@@ -35,11 +28,71 @@ HISTORICAL_SHIFT_THRESHOLD = 0.20
 # tolerance prevents harmless decimal-rounding differences from causing failure.
 EVIDENCE_TOLERANCE = 0.01
 
+def validate_label(value: str, label: str) -> None:
+    """Reject an empty name or food label containing unsupported characters.
+
+    Letters, spaces, hyphens, and apostrophes are accepted so common names and
+    food names remain usable.  The ``label`` argument makes an error message
+    identify the field that needs correction.
+    """
+    cleaned_value = value.strip()
+    valid = (
+        cleaned_value
+        and all(char.isalpha() or char in " -'" for char in cleaned_value)
+        and any(char.isalpha() for char in cleaned_value)
+    )
+    if not valid:
+        raise ValueError(
+            f"{label} must contain letters only "
+            "(spaces, hyphens, and apostrophes are allowed)."
+        )
+
+
+def validate_historical_date(record_date: date) -> None:
+    """Reject a sales-record date that is later than today."""
+    if record_date > date.today():
+        raise ValueError("A historical record date cannot be in the future.")
+
+
+def validate_forecast_date(target_date: date) -> None:
+    """Reject a forecast date that is today or in the past."""
+    if target_date <= date.today():
+        raise ValueError("The forecast target date must be in the future.")
+
+
+def validate_portions(portions_prepared: int, portions_sold: int) -> None:
+    """Ensure quantities are logical: prepared is non-negative and sold is valid."""
+    if portions_prepared < 0:
+        raise ValueError("Portions prepared cannot be negative.")
+    if portions_sold < 0:
+        raise ValueError("Portions sold cannot be negative.")
+    if portions_sold > portions_prepared:
+        raise ValueError("Portions sold cannot be greater than portions prepared.")
+
+
+def validate_context(context: str, context_type: str) -> None:
+    """Limit an optional past or future note to the allowed number of words."""
+    if len(context.split()) > CONTEXT_WORD_LIMIT:
+        raise ValueError(
+            f"{context_type} cannot contain more than {CONTEXT_WORD_LIMIT} words."
+        )
+
+def validate_search_filters(search_filters: dict) -> None:
+    """Validate the user, food item, and inclusive date range used for a search."""
+    validate_label(search_filters["user_name"], "Name")
+    validate_label(search_filters["food_item"], "Food item")
+
+    if search_filters["start_date"] > search_filters["end_date"]:
+        raise ValueError("End date cannot be earlier than the start date.")
+
 
 def normalise_text(value: str) -> str:
-    """Return text in the comparison format used for names and food items."""
-    # For example, "  Chicken   Rice " and "chicken rice" should match the
-    # same saved food item, while the original spelling remains for display.
+    """Return text in a consistent form for comparisons, not for display.
+
+    Extra internal spaces are collapsed and letter case is ignored.  For
+    example, ``"  Chicken   Rice "`` and ``"chicken rice"`` compare as equal,
+    while the original spelling remains available for the user interface.
+    """
     return " ".join(value.split()).casefold()
 
 
@@ -64,7 +117,11 @@ def records_for_forecast(request: dict, all_records: list[dict]) -> list[dict]:
 
 
 def food_items_for_user(user_name: str, all_records: list[dict]) -> list[str]:
-    """Return a user's recorded food items, without case-insensitive duplicates."""
+    """Return one user's food items, removing case-insensitive duplicates.
+
+    The original spelling of the first matching item is preserved for display,
+    and the resulting list is alphabetically ordered.
+    """
     seen_items: set[str] = set()
     items: list[str] = []
     normalised_user = normalise_text(user_name)
@@ -79,7 +136,9 @@ def food_items_for_user(user_name: str, all_records: list[dict]) -> list[str]:
 
 
 def records_for_search(search_filters: dict, all_records: list[dict]) -> list[dict]:
-    """Return one user's item records within the requested inclusive date range."""
+    """Return one user's item records within an inclusive, validated date range."""
+    validate_search_filters(search_filters)
+
     matching_records = [
         record
         for record in all_records
@@ -91,60 +150,34 @@ def records_for_search(search_filters: dict, all_records: list[dict]) -> list[di
 
 
 def validate_sales_record(record: dict) -> None:
-    """Reject incomplete, impossible, or inconsistent historical records."""
-    # Check saved sales data first so inaccurate records do not affect forecasts.
-    for value, label in ((record["user_name"], "Name"), (record["food_item"], "Food item")):
-        cleaned_value = value.strip()
-        is_words_only = (
-            cleaned_value
-            and all(character.isalpha() or character in " -'" for character in cleaned_value)
-            and any(character.isalpha() for character in cleaned_value)
-        )
-        if not is_words_only:
-            raise ValueError(
-                f"{label} must contain letters only (spaces, hyphens, and apostrophes are allowed)."
-            )
-    if len(record["past_context"].split()) > CONTEXT_WORD_LIMIT:
-        raise ValueError(f"Past context cannot contain more than {CONTEXT_WORD_LIMIT} words.")
-    if record["record_date"] > date.today():
-        raise ValueError("A historical record date cannot be in the future.")
-    if record["portions_prepared"] <= 0:
-        raise ValueError("Portions prepared must be a positive whole number.")
-    if record["portions_sold"] < 0:
-        raise ValueError("Portions sold cannot be negative.")
-    if record["portions_sold"] > record["portions_prepared"]:
-        raise ValueError("Portions sold cannot be greater than portions prepared.")
+    """Apply every business rule required before one sales record is saved."""
+    validate_label(record["user_name"], "Name")
+    validate_label(record["food_item"], "Food item")
+    validate_context(record["past_context"], "Past context")
+    validate_historical_date(record["record_date"])
+    validate_portions(record["portions_prepared"], record["portions_sold"])
 
 
 def validate_forecast_request(request: dict, historical_records: list[dict]) -> None:
-    """Check that a forecast has valid inputs before Gemini is called."""
-    # A forecast needs a future date and at least one matching past sales record.
-    for value, label in ((request["user_name"], "Name"), (request["food_item"], "Forecast food item")):
-        cleaned_value = value.strip()
-        is_words_only = (
-            cleaned_value
-            and all(character.isalpha() or character in " -'" for character in cleaned_value)
-            and any(character.isalpha() for character in cleaned_value)
-        )
-        if not is_words_only:
-            raise ValueError(
-                f"{label} must contain letters only (spaces, hyphens, and apostrophes are allowed)."
-            )
-    if len(request["future_context"].split()) > CONTEXT_WORD_LIMIT:
-        raise ValueError(f"Future context cannot contain more than {CONTEXT_WORD_LIMIT} words.")
-    if request["target_date"] <= date.today():
-        raise ValueError("The forecast target date must be in the future.")
+    """Validate forecast inputs and require matching historical sales data."""
+    validate_label(request["user_name"], "Name")
+    validate_label(request["food_item"], "Forecast food item")
+    validate_context(request["future_context"], "Future context")
+    validate_forecast_date(request["target_date"])
+
     if not historical_records:
         raise ValueError("No historical records were found for this food item.")
 
-
 def build_ai_payload(request: dict, historical_records: list[dict]) -> dict:
-    """Package raw history for Gemini; no trends or forecast are calculated here."""
-    # Give Gemini the raw records and rule values, without changing the sales
-    # data.  The adapter, rather than Gemini, remains responsible for deciding
-    # whether the completed response is safe to display.
-    # Sort before selecting the focused groups so "recent" has the same
-    # meaning even when the CSV records were entered out of date order.
+    """Create JSON-safe factual evidence for the AI manager.
+
+    No prediction is calculated here.  The payload contains complete history,
+    recent records, target-weekday records, and the rules the AI must respect.
+    The adapter remains responsible for converting the AI factor into a final
+    quantity and this module later verifies that quantity.
+    """
+    # Sort first so the terms "recent" and "last four" always mean the latest
+    # dates, even if CSV rows were entered out of chronological order.
     ordered_records = sorted(historical_records, key=lambda record: record["record_date"])
 
     def serialise_record(record: dict) -> dict:
@@ -191,10 +224,14 @@ def build_ai_payload(request: dict, historical_records: list[dict]) -> dict:
 
 
 def calculate_evidence_metrics(historical_records: list[dict], target_date: date) -> dict[str, float | None]:
-    """Calculate facts only to verify Gemini's claims, never to forecast."""
-    # These averages and totals are used as evidence when checking the AI result.
-    # They are not a second forecasting algorithm: their purpose is to verify
-    # factual claims such as record counts and historical averages.
+    """Calculate stored-sales facts used to verify a forecast's evidence.
+
+    These metrics are not a second forecasting algorithm.  They provide local,
+    reproducible facts—such as record count and recent averages—that the final
+    response may cite and that ``validate_ai_response`` can check.
+    """
+
+    historical_records = sorted(historical_records, key=lambda record: record["record_date"],)
     all_sales = [record["portions_sold"] for record in historical_records]
     same_weekday_sales = [
         record["portions_sold"]
@@ -228,10 +265,14 @@ def calculate_evidence_metrics(historical_records: list[dict], target_date: date
 
 
 def validate_ai_response(response: dict, request: dict, historical_records: list[dict]) -> list[str]:
-    """Return failed guardrails; this function never changes an AI quantity."""
-    # Return every failed rule so the adapter can stop an unsafe forecast.
-    # Collect every issue in one pass so the adapter can report a useful error
-    # instead of repeatedly asking the AI to fix one unknown problem at a time.
+    """Return every violated forecast guardrail without changing the response.
+
+    The adapter uses the returned messages to reject an unsafe forecast.  This
+    function checks quantity, confidence, explanatory content, cited evidence,
+    limited-history warnings, the overall maximum, and weekday deviations.
+    """
+    # Collect all issues in one pass so callers receive one useful explanation
+    # rather than discovering guardrails one at a time.
     issues = []
     if response["suggested_portions"] <= 0:
         issues.append("suggested_portions must be a positive whole number")
