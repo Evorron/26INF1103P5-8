@@ -5,7 +5,7 @@ Run with ``python main.py`` after installing the dependencies required by
 managers instead of changing their responsibilities.
 """
 
-import Input_output_manager as io_manager
+import input_output_manager as io_manager
 import forecast_adapter
 import logic_manager
 
