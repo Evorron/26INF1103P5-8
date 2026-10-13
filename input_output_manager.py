@@ -256,3 +256,19 @@ def show_records(records: list[dict]):
             for line in format_row(row):
                 print(line)
             print(border)            
+
+def record_preview(record: dict):
+    ##Display recent new record before it is saved
+    leftovers = record["portions_prepared"] - record["portions_sold"]
+
+    print("Please check the details of the following record: ")
+    print(f"Name: {record['user_name']}")
+    print(f"Business type: {record['business_type']}")
+    print(f"Date: {record['record_date'].isoformat()}")
+    ##"iso" dateformat
+
+    print(f"Food item: {record['food_item']}")
+    print(f"Prepared: {record['portions_prepared']}")
+    print(f"Sold: {record['portions_sold']}")
+    print(f"Leftover: {leftovers}")
+    print(f"Past context: {record['past_context']}")
