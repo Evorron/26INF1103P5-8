@@ -1,11 +1,11 @@
 __pycache__/
 *.py[cod]
+*.pyc
 
 # Locally generated test inventory data
 data/records.csv
  # ignores compiled python files and environment variable files from version control
-    
+
 .env   
-__pycache__/
-*.pyc
+
 

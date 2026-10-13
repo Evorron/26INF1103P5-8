@@ -1,0 +1,11 @@
+# Git Version Control
+.git/
+.gitignore
+
+# Python Cache and Compiled Files
+__pycache__/
+*.py[cod]
+*.pyc
+
+# Ignore any markdown documentation
+**/*.md
