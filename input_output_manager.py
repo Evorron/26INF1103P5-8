@@ -310,3 +310,30 @@ def check_sold_portions(prompt: int, portions_prepared: int):
         except ValueError:
             pass
         print(f"Enter a whole number from 0 to {portions_prepared}.")
+
+
+def read_historical_date(prompt: date):
+    ##Read a valid date that is today or earlier
+    while True:
+        entered_date = read_date(prompt)
+        if entered_date <= date.today():
+            return entered_date
+        print("A historical record date cannot be in the future.")
+
+
+def read_future_date(prompt: date):
+    ##Read a valid date after today for forecasting
+    while True:
+        entered_date = read_date(prompt)
+        if entered_date > date.today():
+            return entered_date
+        print("The forecast target date must be in the future.")
+
+
+def read_date(prompt: date):
+    ##Read an ISO date and immediately reject an invalid format
+    while True:
+        try:
+            return date.fromisoformat(input(prompt).strip())
+        except ValueError:
+            print("Enter the date in YYYY-MM-DD format.")
