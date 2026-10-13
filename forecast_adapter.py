@@ -157,6 +157,7 @@ def build_validated_forecast(
     # exception to the usual weekday guardrail may be permitted.
     response = {
         "suggested_portions": suggested_portions,
+        "recorded_sales": [record["portions_sold"] for record in historical_records],
         "confidence": confidence,
         "reasoning": reasoning,
         "business_advice": (
@@ -218,6 +219,7 @@ def baseline_fallback_forecast(request: dict, historical_records: list[dict]) ->
     )
     response = {
         "suggested_portions": suggested_portions,
+        "recorded_sales": [record["portions_sold"] for record in historical_records],
         "confidence": "low",
         "reasoning": (
             "Gemini is unavailable, so this forecast uses the middle value "
@@ -263,13 +265,14 @@ def valid_demand_factor(ai_response: dict) -> float:
     """Return a valid positive AI demand factor, capped by the project maximum."""
     # A malformed or extreme AI value must not influence a preparation quantity.
     try:
-        factor = float(ai_response["demand_impact_factor"])
-    except (KeyError, TypeError, ValueError) as error:
-        raise RuntimeError("Gemini returned no usable demand-impact factor.") from error
-    if not isfinite(factor) or factor <= 0:
-        raise RuntimeError("Gemini returned an invalid demand-impact factor.")
-    return min(factor, logic_manager.MAXIMUM_MULTIPLIER)
+        factor = float(ai_response.get("demand_impact_factor", 1.0))
+    except (TypeError, ValueError):
+        return 1.0
 
+    return max(
+        logic_manager.MINIMUM_DEMAND_FACTOR,
+        min(factor, logic_manager.MAXIMUM_MULTIPLIER),
+    )
 
 def quantity_from_factor(factor: float, request: dict, historical_records: list[dict]) -> int:
     """Apply a demand factor to typical sales while enforcing local quantity limits.
@@ -280,25 +283,25 @@ def quantity_from_factor(factor: float, request: dict, historical_records: list[
     recommendations.
     """
     sales = [record["portions_sold"] for record in historical_records]
+    typical_sales = median(sales)
     historical_maximum = max(sales)
     if historical_maximum == 0:
         raise RuntimeError("A positive forecast cannot be produced because all saved sales are zero.")
 
     # Gemini's factor is applied only after a robust historical baseline exists.
-    quantity = max(1, round(median(sales) * factor))
-    maximum_allowed = floor(historical_maximum * logic_manager.MAXIMUM_MULTIPLIER)
-    quantity = min(quantity, maximum_allowed)
-    same_weekday_sales = [
-        record["portions_sold"]
-        for record in historical_records
-        if record["record_date"].weekday() == request["target_date"].weekday()
-    ]
+    quantity = max(1, round(typical_sales * factor))
+    minimum_allowed = max(1,ceil(typical_sales * logic_manager.MINIMUM_RECOMMENDATION_RATIO),)
+    maximum_allowed = floor(historical_maximum* logic_manager.MAXIMUM_MULTIPLIER)
+    quantity = max(minimum_allowed,min(quantity, maximum_allowed),)
+    same_weekday_sales = [record["portions_sold"] for record in historical_records if record["record_date"].weekday() == request["target_date"].weekday()]
     if len(same_weekday_sales) >= logic_manager.REQUIRED_SAME_WEEKDAY_RECORDS:
         weekday_average = sum(same_weekday_sales[-logic_manager.REQUIRED_SAME_WEEKDAY_RECORDS:]) / 4
         if weekday_average > 0 and not request["future_context"].strip():
             # Without a supplied reason for a change, keep the quantity within
             # ±50% of the recent target-weekday average.
-            quantity = max(ceil(weekday_average * 0.5), min(quantity, floor(weekday_average * 1.5)))
+            weekday_minimum = max(1,ceil(weekday_average* logic_manager.MINIMUM_RECOMMENDATION_RATIO),)
+            weekday_maximum = floor( weekday_average* logic_manager.MAXIMUM_MULTIPLIER)
+            quantity = max(weekday_minimum,min(quantity, weekday_maximum),)
     return quantity
 
 
