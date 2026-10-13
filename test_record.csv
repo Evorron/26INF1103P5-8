@@ -1,0 +1,8 @@
+user_name,business_type,record_date,food_item,portions_prepared,portions_sold,past_context
+Tammy,Hawker,2025-01-01,Chicken Rice,19,15,Today raining heavily at around 5pm
+Tammy,Hawker,2025-01-02,Chicken Rice,20,18,"Got event in the afternoon at 6pm, alot people come"
+Tammy,Hawker,2025-01-03,Chicken Rice,20,14,PSI Haze level today is unhealthy
+Tammy,Hawker,2025-01-04,Chicken Rice,20,20,Got new-year celebration nearby
+Tammy,Hawker,2025-01-05,Chicken Rice,20,20,
+Tammy,Hawker,2025-01-06,Chicken Rice,0,0,Offday
+Tammy,Hawker,2025-01-07,Chicken Rice,20,9,"School holiday, no crowd nearby"
