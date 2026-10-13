@@ -53,6 +53,39 @@ def check_business_type(user_name: str, business_type: str):
         raise ValueError(f"Business type for {user_name} must be '{registered_type}'.")
     ## "Raise an error if input business_type doesn't match the registered record"
 
+def save_record_to_csv(record: dict):
+    ## "Append a confirmed sales record to sales_records.csv"
+    data_path = Path(__file__).resolve().parent / "data" / "test_records.csv"
+    data_path.parent.mkdir(parents=True, exist_ok=True)
+    file_exists = data_path.exists()
+
+    with open(data_path, mode="a", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=record.keys())
+        if not file_exists:
+            writer.writeheader()
+        
+        ## "Convert date object for CSV storage"
+        row_data = record.copy()
+        row_data["record_date"] = record["record_date"].isoformat()
+        writer.writerow(row_data)
+
+
+
+def load_records_from_csv():
+    ## "load and parse all sales records from sales_records.csv"
+    data_path = Path(__file__).resolve().parent / "data" / "sales_records.csv"
+    if not data_path.exists():
+        return []
+    
+    records = []
+    with open(data_path, encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            row["portions_prepared"] = int(row["portions_prepared"])
+            row["portions_sold"] = int(row["portions_sold"])
+            row["record_date"] = date.fromisoformat(row["record_date"])
+            records.append(row)
+    return records
+
 
 def collect_sales_record():
     ## "Collect a record, display it to the user and save or edit"
