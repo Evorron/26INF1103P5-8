@@ -140,3 +140,17 @@ def edit_sales_record(record: dict):
         record["past_context"] = input("Optional past context: ").strip()
     else:
         print("Please choose a number from 1 to 7.")
+
+
+def collect_forecast_infomation():
+    ## "Collect known infomation before preparing food"
+
+    print("\nEnter forecast information")
+    
+    user_name= input("Your name: ").strip(),
+    food_item= input("Forecast food item: ").strip(),
+    target_date=read_future_date("Target date (YYYY-MM-DD): "),
+    future_context= input("Optional context: ").strip(), 
+    ## "Basic Information to be forecast"
+
+    return collect_forecast_infomation
