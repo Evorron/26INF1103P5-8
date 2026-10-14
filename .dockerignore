@@ -1,6 +1,10 @@
-# Git Version Control
+# Ignore Git Version Control
 .git/
 .gitignore
+
+# Ignore Docker Configurations
+Dockerfile
+.dockerignore
 
 # Python Cache and Compiled Files
 __pycache__/
@@ -14,4 +18,4 @@ __pycache__/
 data/
 
 # Ignore sensitive keys
-.env   
+.env
