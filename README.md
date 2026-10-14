@@ -1,17 +1,31 @@
 # AI Food Preparation Advisor
 
-# Introduction
->### What does our program do?
->### What are the rules and validation implemented?
+# Installation & Set-up 
 
-# Data Flow Diagram
->## Show 1 overall data flow diagram of the program
+## Method 1 (Docker):
+You can run the program virtually via Docker without pulling the Git Repository
 
-# Data Structure and Storage Design
->## Describe: 
->####    • Files used by the application 
->####   • Data formats (CSV, JSON, TXT, etc.) 
->####    • Structure of stored records
+1. Create an `.env` file in a new local folder and paste this inside:
+    GROQ_API_KEY= YourActualKey
+2. Open Command Prompt & Navigate to your folder path
+3. Copy & Run the following command:
 
-# Exception Handling
->## Provide a table showing how the application deals with potential errors.
+    `docker run --rm -it --env-file .env -v "%cd%:/app/data" evorron/hawkerai:v2`
+
+## Method 2 (Clone Git Repo + Docker):
+You can also run the program by cloning the Github Repository
+
+1. Clone the Github Repository
+
+`git clone `
+
+2. Execute installation of required modules
+
+    `pip install requirements.txt`
+
+3. Build & Run Docker
+
+    `docker build ...`
+    
+    `docker run ...`
+
