@@ -9,3 +9,9 @@ __pycache__/
 
 # Ignore any markdown documentation
 **/*.md
+
+# Ignore locally generated data
+data/
+
+# Ignore sensitive keys
+.env   
