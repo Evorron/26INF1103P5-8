@@ -26,7 +26,7 @@ WEEKDAY_DEVIATION_LIMIT = 0.50
 REQUIRED_SAME_WEEKDAY_RECORDS = 4
 HISTORICAL_SHIFT_THRESHOLD = 0.20
 
-# Gemini-provided evidence is compared with local calculations.  A small
+# AI-provided evidence is compared with local calculations.  A small
 # tolerance prevents harmless decimal-rounding differences from causing failure.
 EVIDENCE_TOLERANCE = 0.01
 
@@ -183,7 +183,7 @@ def build_ai_payload(request: dict, historical_records: list[dict]) -> dict:
     ordered_records = sorted(historical_records, key=lambda record: record["record_date"])
 
     def serialise_record(record: dict) -> dict:
-        """Convert one local record into JSON-safe factual evidence for Gemini."""
+        """Convert one local record into JSON-safe factual evidence for AI."""
         return {
             "record_date": record["record_date"].isoformat(),
             "weekday": record["record_date"].strftime("%A"),
@@ -209,7 +209,7 @@ def build_ai_payload(request: dict, historical_records: list[dict]) -> dict:
             "future_context": request["future_context"] or None,
         },
         # The complete history is retained, but these focused groups make the
-        # intended weekday and recency comparisons explicit for Gemini.
+        # intended weekday and recency comparisons explicit for AI.
         "historical_records": [serialise_record(record) for record in ordered_records],
         "same_weekday_records": [serialise_record(record) for record in same_weekday_records],
         "recent_records": [

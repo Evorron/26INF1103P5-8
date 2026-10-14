@@ -19,7 +19,7 @@ def display_all():
     ##"Display main menu"
     print("------------MENU-----------------")
     print("1. Add a historical sales record")
-    print("2. Generate a Gemini forecast")
+    print("2. Generate a forecast")
     print("3. List my recorded food items")
     print("4. View my records by food item and date range")
     print("5. Exit")
@@ -279,7 +279,7 @@ def record_preview(record: dict):
 
 
 def show_forecast(response: dict):
-    ##Show Gemini's forecast without changing its suggested portions."""
+    ##Show Ai's forecast without changing its suggested portions."""
     print("\nForecast Recommendation\n")
     recorded_sales = response["recorded_sales"]
     if recorded_sales:

@@ -10,8 +10,12 @@ from requests.exceptions import ConnectionError, Timeout
 load_dotenv(override=True)
 
 # Define default API URL endpoint and specific AI model to use
-DEFAULT_ENDPOINT = os.getenv("GEMINI_API_URL", "https://generativelanguage.googleapis.com/v1beta/interactions").strip()
-DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.7-flash").strip()
+DEFAULT_ENDPOINT = os.getenv("GROQ_API_URL","https://api.groq.com/openai/v1/chat/completions",).strip()
+DEFAULT_MODEL = os.getenv("GROQ_MODEL","openai/gpt-oss-20b",).strip()
+MAX_COMPLETION_TOKENS = int(os.getenv("GROQ_MAX_COMPLETION_TOKENS", 350).strip())
+
+#DEFAULT_ENDPOINT = os.getenv("GEMINI_API_URL", "https://generativelanguage.googleapis.com/v1beta/interactions").strip()
+#DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.7-flash").strip()
 
 
 ## System instructions for the AI model to follow when generating forecasts.
@@ -80,25 +84,26 @@ def generate_forecast(
     deadline=None
 ) -> dict:
     """
-    Calls Gemini using the Interactions API endpoint and gemini-3.8-flash.
+    Calls Groq using the Interactions API endpoint and openai/gpt-oss-20b.
     Parses the steps structure returned by the v1beta interactions endpoint.
     """
 
 # Get API key from environment variables
-    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    #api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    api_key = os.getenv("GROQ_API_KEY", "").strip()
 
 # Safety fallback response in case of API failure or missing key
     fallback_response = {
         "status": "fallback",
         "demand_impact_factor": 1.0,
-        "context_assessment": "Gemini API unavailable or key unconfigured. Triggering historical median baseline.",
+        "context_assessment": "Groq unavailable or key unconfigured. Triggering Baseline Output.",
         "confidence_score": "low",
         "factors_considered": ["API Connection Unavailable"]
     }
     
 # If no key found, log warning and return fallback response
     if not api_key:
-        print("\n[AI Manager Warning] GEMINI_API_KEY not found in .env file.")
+        print("\n[AI Manager Warning] GROQ_API_KEY not found in .env file.")
         return fallback_response
 
     user_input = json.dumps(
@@ -108,24 +113,49 @@ def generate_forecast(
 
     request_body = {
         "model": DEFAULT_MODEL,
-        "input": user_input,
-        "system_instruction": SYSTEM_INSTRUCTIONS,
+        "messages": [
+            {
+                "role": "system",
+                "content": SYSTEM_INSTRUCTIONS,
+            },
+            {
+                "role": "user",
+                "content": user_input,
+            },
+        ],
+        "temperature": 0.2,
+        "max_completion_tokens": MAX_COMPLETION_TOKENS,
+        "reasoning_effort": "low", #"low" is the default because the AI only needs to provide a demand factor and short explanation—not solve a complex technical problem
         "response_format": {
-            "type": "text",
-            "mime_type": "application/json",
-            "schema": RESPONSE_SCHEMA,          # Forces AI to obey schema rules
+            "type": "json_schema",
+            "json_schema": {
+                "name": "hawker_forecast",
+                "strict": True,
+                "schema": RESPONSE_SCHEMA,
+            },
         },
-        "store": False,
+        
+        #"model": DEFAULT_MODEL,
+        #"input": user_input,
+        #"system_instruction": SYSTEM_INSTRUCTIONS,
+        #"response_format": {
+        #    "type": "text",
+        #    "mime_type": "application/json",
+        #    "schema": RESPONSE_SCHEMA,          # Forces AI to obey schema rules
+        #},
+        #"store": False,
     }
 
 # Set up HTTP headers for the API request including authentication
     headers = {
-        "x-goog-api-key": api_key,
-        "Content-Type": "application/json"
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        #"x-goog-api-key": api_key,
+        #"Content-Type": "application/json"
     }
 
     try:
-# Send POST request to the Gemini API endpoint with 30 seconds timeout limit
+# Send POST request to the Groq API endpoint with 30 seconds timeout limit
         for attempt in range(3):
             try:
                 response = requests.post(
@@ -143,13 +173,13 @@ def generate_forecast(
                 if attempt == 2:
                     print(
                         "\n[AI Manager Exception] "
-                        f"Failed to reach Gemini API: {error}"
+                        f"Failed to reach Groq API: {error}"
                     )
                     return fallback_response
 
                 wait_seconds = 2 ** attempt
                 print(
-                    f"\nGemini is slow. Retrying in "
+                    f"\nGroq is slow. Retrying in "
                     f"{wait_seconds} second(s)..."
                 )
                 time.sleep(wait_seconds)
@@ -157,17 +187,23 @@ def generate_forecast(
         if response.status_code == 200:
             result_body = response.json()
 # Extract text safely from the Interactions API steps structure
-            steps = result_body.get("steps", [])
-            for step in steps:
-                content_list = step.get("content", [])
-                for content in content_list:
-                    if (
-                        content.get("type") == "text"
-                        and "text" in content
-                    ):
-                        parsed_json = json.loads(content["text"])
-                        parsed_json["status"] = "success"
-                        return parsed_json
+            content = (result_body["choices"][0]["message"]["content"])
+
+            parsed_json = json.loads(content)
+            parsed_json["status"] = "success"
+
+            return parsed_json
+            #steps = result_body.get("steps", [])
+            #for step in steps:
+            #    content_list = step.get("content", [])
+            #    for content in content_list:
+            #        if (
+            #            content.get("type") == "text"
+            #            and "text" in content
+            #        ):
+            #            parsed_json = json.loads(content["text"])
+            #            parsed_json["status"] = "success"
+            #            return parsed_json
                         
 
 # Returns error code & message if the API response is not successful and return fallback response
@@ -178,9 +214,9 @@ def generate_forecast(
         return fallback_response
 
 # Catch network crashes or timeout errors and return fallback response
-    except Exception as error:
+    except (KeyError,TypeError,ValueError,json.JSONDecodeError,requests.exceptions.RequestException) as error:
         print(
             "\n[AI Manager Exception] "
-            f"Failed to process Gemini API response: {error}"
+            f"Failed to process API response: {error}"
         )
         return fallback_response

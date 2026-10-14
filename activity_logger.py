@@ -38,7 +38,7 @@ def log_request(
     request = evidence_payload["forecast_request"]
     details = {
         "activity_id": activity_id,
-        "provider": "Gemini",
+        "provider": "Groq",
         "model": model,
         "user_name": request["user_name"],
         "food_item": request["food_item"],
@@ -48,7 +48,7 @@ def log_request(
     }
     if os.getenv("AI_LOG_FULL_CONTENT", "false").lower() == "true":
         details["full_evidence_payload"] = evidence_payload
-    write_event(log_path, "gemini_request_started", details)
+    write_event(log_path, "groq_request_started", details)
 
 
 def log_response(
@@ -67,7 +67,7 @@ def log_response(
         "forecast_generated",
         {
             "activity_id": activity_id,
-            "provider": "Gemini",
+            "provider": "Groq",
             "model": model,
             "forecast_response": response,
         },
@@ -90,10 +90,10 @@ def log_retry(
     """
     write_event(
         log_path,
-        "gemini_retry_scheduled",
+        "groq_retry_scheduled",
         {
             "activity_id": activity_id,
-            "provider": "Gemini",
+            "provider": "Groq",
             "model": model,
             "attempt": attempt,
             "delay_seconds": round(delay_seconds, 2),
@@ -117,9 +117,9 @@ def log_provider_switch(
     """
     write_event(
         log_path,
-        "gemini_model_fallback",
+        "groq_model_fallback",
         {
-            "provider": "Gemini",
+            "provider": "Groq",
             "from_model": from_model,
             "to_model": to_model,
             "http_status": status,
@@ -134,8 +134,8 @@ def log_validation_rejection(log_path: Path, model: str, attempt: int, violation
     """Record why an AI response was rejected before a future correction attempt."""
     write_event(
         log_path,
-        "gemini_response_rejected",
-        {"provider": "Gemini", "model": model, "attempt": attempt, "violations": violations},
+        "groq_response_rejected",
+        {"provider": "Groq", "model": model, "attempt": attempt, "violations": violations},
     )
 
 
@@ -150,10 +150,10 @@ def log_error(
     """Record a safely printable configuration, network, API, or validation failure."""
     write_event(
         log_path,
-        "gemini_request_failed",
+        "groq_request_failed",
         {
             "activity_id": activity_id,
-            "provider": "Gemini",
+            "provider": "Groq",
             "model": model,
             "http_status": status,
             "failure_type": failure_type,
@@ -166,9 +166,9 @@ def log_final_failure(log_path: Path, models: list[str], attempts: int, reason: 
     """Record that all planned retries and model fallbacks were exhausted."""
     write_event(
         log_path,
-        "gemini_forecast_unavailable",
+        "groq_forecast_unavailable",
         {
-            "provider": "Gemini",
+            "provider": "Groq",
             "models_tried": models,
             "attempts_per_model": attempts,
             "reason": reason,
@@ -180,10 +180,10 @@ def log_quota_wait(log_path: Path, activity_id: str, model: str, wait_seconds: f
     """Record a future deliberate wait used to avoid exceeding an AI rate limit."""
     write_event(
         log_path,
-        "gemini_rate_limit_wait",
+        "groq_rate_limit_wait",
         {
             "activity_id": activity_id,
-            "provider": "Gemini",
+            "provider": "Groq",
             "model": model,
             "wait_seconds": round(wait_seconds, 2),
         },
@@ -194,8 +194,8 @@ def log_quota_block(log_path: Path, model: str, message: str) -> None:
     """Record when a future quota guard blocks a request before it is sent."""
     write_event(
         log_path,
-        "gemini_quota_guard_blocked",
-        {"provider": "Gemini", "model": model, "message": message},
+        "groq_quota_guard_blocked",
+        {"provider": "Groq", "model": model, "message": message},
     )
 
 

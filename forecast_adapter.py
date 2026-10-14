@@ -96,7 +96,7 @@ def build_validated_forecast(
     ai_response = ai_manager.generate_forecast(evidence_payload)
     if ai_response.get("status") != "success":
         # An unavailable API should not crash the app.  Use a conservative,
-        # clearly labelled local baseline instead of pretending Gemini replied.
+        # clearly labelled local baseline instead of pretending Groq replied.
         return baseline_fallback_forecast(request, historical_records)
 
     factor = valid_demand_factor(ai_response)
@@ -190,7 +190,7 @@ def build_validated_forecast(
         ),
         "uses_future_context": has_future_context,
         "exception_justification": (
-            "Gemini received the supplied future context when it selected the demand-impact factor."
+            "Groq received the supplied future context when it selected the demand-impact factor."
             if has_future_context
             else None
         ),
@@ -210,7 +210,7 @@ def baseline_fallback_forecast(request: dict, historical_records: list[dict]) ->
     received.  The normal logic-manager validation still applies to the result.
     """
     # This local fallback makes a useful forecast without sending another API
-    # request.  It deliberately ignores future context because Gemini was not
+    # request.  It deliberately ignores future context because Groq was not
     # available to assess the likely impact of that context.
     baseline_request = {**request, "future_context": ""}
     suggested_portions = quantity_from_factor(1.0, baseline_request, historical_records)
@@ -222,14 +222,14 @@ def baseline_fallback_forecast(request: dict, historical_records: list[dict]) ->
         "recorded_sales": [record["portions_sold"] for record in historical_records],
         "confidence": "low",
         "reasoning": (
-            "Gemini is unavailable, so this forecast uses the middle value "
+            "Groq is unavailable, so this forecast uses the middle value "
             "of the saved sales records without an AI adjustment."
         ),
         "business_advice": (
             f"Prepare {suggested_portions} portions, then compare sales and leftovers "
             "after service before relying on future forecasts."
         ),
-        "factors_considered": ["Historical median baseline", "Gemini unavailable"],
+        "factors_considered": ["Historical median baseline", "Groq unavailable"],
         "evidence": [
             {
                 "metric": "record_count",
@@ -246,7 +246,7 @@ def baseline_fallback_forecast(request: dict, historical_records: list[dict]) ->
             },
         ],
         "warning": (
-            "Gemini is unavailable. This is a low-confidence baseline based only on saved sales."
+            "Groq is unavailable. This is a low-confidence baseline based only on saved sales."
         ),
         "uses_future_context": False,
         "exception_justification": None,
@@ -288,7 +288,7 @@ def quantity_from_factor(factor: float, request: dict, historical_records: list[
     if historical_maximum == 0:
         raise RuntimeError("A positive forecast cannot be produced because all saved sales are zero.")
 
-    # Gemini's factor is applied only after a robust historical baseline exists.
+    # factor is applied only after a robust historical baseline exists.
     quantity = max(1, round(typical_sales * factor))
     minimum_allowed = max(1,ceil(typical_sales * logic_manager.MINIMUM_RECOMMENDATION_RATIO),)
     maximum_allowed = floor(historical_maximum* logic_manager.MAXIMUM_MULTIPLIER)
@@ -321,4 +321,4 @@ def normalise_factors(value: object) -> list[str]:
         factors = [str(item).strip() for item in value if str(item).strip()]
         if factors:
             return factors[:3]
-    return ["Gemini demand-impact assessment"]
+    return ["Groq demand-impact assessment"]
