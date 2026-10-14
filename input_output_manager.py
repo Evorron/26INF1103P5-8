@@ -3,7 +3,8 @@ from datetime import date
 from pathlib import Path
 import shutil
 import textwrap
-import data_manager
+from urllib import response
+
 
 
 def display_welcome():
@@ -187,6 +188,7 @@ def show_items(items: list[str]):
     print("Recorded food items:")
     for item in items:
         print(f"• {item}")
+    print("\n")
 
 
 def show_records(records: list[dict]):
@@ -371,6 +373,9 @@ def show_past_forecasts(recommendations: list[dict]) -> None:
         print("\nNo past forecasts found.")
         return
 
+
+
+
     for record in recommendations:
         print("\n" + "=" * 50)
         print("          HAWKER AI - PAST FORECAST")
@@ -432,54 +437,3 @@ def ask_duplicate_forecast_action() -> str:
             return "cancel"
         else:
             print("Invalid choice. Please enter 1, 2, or 3.")
-
-display_welcome()
-while True:
-        action = display_all()  ## Display Menu
-
-        if action == "1":
-                record = collect_sales_record()
-
-                ## Save the confirmed record through Data Manager
-                data_manager.add_record(
-                    data_manager.RECORDS_FILE,
-                    record
-                )
-                ## "Check against exsisting users record to it's business_type"
-                normalized_name = " ".join(
-                    record["user_name"].split()
-                ).casefold() ## Take-note of the case-sensitive users-inputs
-
-                registered_business[normalized_name] = record["business_type"]
-
-                print("Historical sales record saved successfully!")
-
-        elif action == "2":
-                request = collect_forecast_infomation()
-                print("Forecast request collected successfully!")
-        elif action == "3":
-                user_name = input("Your name: ").strip()
-
-                items = data_manager.item_names_for_user(
-                    data_manager.RECORDS_FILE,
-                    user_name
-                )
-                show_items(items)
-                
-        elif action == "4":
-                search_filters = collect_record_search()
-                ## Searching records via Data Manager csv file
-                records = data_manager.records_in_date_range(
-                    data_manager.RECORDS_FILE,
-                    search_filters["user_name"],
-                    search_filters["food_item"],
-                    search_filters["start_date"],
-                    search_filters["end_date"],
-                )
-
-                show_records(records)
-
-        elif action == "5":  ## Exiting Program
-                print("Exiting the programme...")
-                print("Thank you for using Hawker AI! Have a pleasant day ahead!")
-                break
