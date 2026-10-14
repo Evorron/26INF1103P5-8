@@ -13,27 +13,26 @@ This tool is able to do the following:
 <h2>Method 1 (Docker):</h2>
 You can run the program virtually via Docker without pulling the Git Repository
 
-1. Place the `.env` file in a new local folder and paste this inside:
-    GROQ_API_KEY= YourActualKey
-2. Open Command Prompt & Navigate to your folder path
-3. Copy & Run the following command:
+1. Open Command Prompt & navigate to a path you wish to use
+2. Copy & Run the following command:
 
-    `docker run --rm -it --env-file .env -v "%cd%:/app/data" evorron/hawkerai:latest`
+    `docker run --rm -it -v "%cd%:/app/data" evorron/hawkerai:demo-image`
 
-<h2>Method 2 (Clone Git Repo + Docker):</h2>
-You can also run the program by cloning the Github Repository
+<h2>Method 2 (Clone Git Repo + Build Docker Image):</h2>
+You can also run the program by cloning the Github Repository and building the Docker Image yourself
 
 1. Clone the Github Repository
 
-`git clone `
+`git clone "https://github.com/Evorron/26INF1103P5-8"`
 
-2. Execute installation of required modules
+2. Modify the `.env` file with your Grok API key
 
-    `pip install requirements.txt`
+    ` GROQ_API_KEY= YourActualKey`
 
-3. Build & Run Docker
+2. Build the Docker Image
+    `docker build -t <image_name> .`
 
-    `docker build ...`
-    
-    `docker run ...`
+3. Run the Docker image
+
+    `docker run --rm -it --env-file .env -v "%cd%:/app/data" <image_name>>`
 
