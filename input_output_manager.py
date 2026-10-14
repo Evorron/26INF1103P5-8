@@ -8,6 +8,7 @@ import data_manager
 
 def display_welcome():
     ##"Display opening program title"
+    print("\n")
     print("--------------------------------")
     print("Welcome to Hawker AI!")
     print("An enhance tools for food preparation forecasting.\n")
@@ -17,12 +18,12 @@ def display_all():
     ##"Display main menu"
     print("------------MENU-----------------")
     print("1. Add a historical sales record")
-    print("2. Generate a Gemini forecast")
+    print("2. Generate a forecast")
     print("3. List my recorded food items")
     print("4. View my records by food item and date range")
     print("5. Exit")
 
-    return input("Choose an option: ").strip()  ##"To prevent breaking due to typos"
+    return input("\nChoose an option: ").strip()  ##"To prevent breaking due to typos"
 
 
 registered_business = {} ##"Save "business_type" entires into a 'dictionary'" 
@@ -255,7 +256,8 @@ def show_records(records: list[dict]):
     for row in rows:
             for line in format_row(row):
                 print(line)
-            print(border)            
+            print(border)
+    print("\n")            
 
 def record_preview(record: dict):
     ##Display recent new record before it is saved
@@ -276,16 +278,20 @@ def record_preview(record: dict):
 
 def show_forecast(response: dict):
     ##Show Gemini's forecast without changing its suggested portions
-    print("\nGemini Forecast")
-    print(f"Suggested portions to prepare: {response['suggested_portions']}")
-    print(f"Confidence: {response['confidence'].title()}")
-    print(f"Reasoning: {response['reasoning']}")
+    print("\nForecast Recommendation")
+    recorded_sales = response["recorded_sale"]
+    if recorded_sales:
+        average_recorded_sales = sum(recorded_sales) / len(recorded_sales)
+        print("Average recorded sales: " f"{average_recorded_sales:.1f} portions\n")
+    else:
+        print("Average recorded sales: Not available.\n")
+    
     print("Factors considered: " + ", ".join(response["factors_considered"]))
     print("Verified evidence:")
     for item in response["evidence"]:
         print(f"- {item['claim']} ({item['metric']}: {item['value']})")
     if response["warning"]:
-        print(f"Warning: {response['warning']}")
+        print(f"Warning: {response['warning']}\n")
 
 
 def check_positive_integer(prompt: int):
