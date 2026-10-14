@@ -9,7 +9,7 @@ from pathlib import Path
 DATA_FOLDER = Path(__file__).resolve().parent / "data"
 RECORDS_FILE = DATA_FOLDER / "sales_records.csv"
 
-FIELDNAMES = [
+RECORD_FIELDS = [
     "user_name",
     "business_type",
     "record_date",
@@ -63,13 +63,13 @@ def add_record(storage_path: Path, record: dict) -> None:
 
     row = {
         field: record.get(field, "")
-        for field in FIELDNAMES
+        for field in RECORD_FIELDS
     }
 
     row["record_date"] = record_date.isoformat()
 
     with storage_path.open("a", newline="", encoding="utf-8") as file:
-        writer = csv.DictWriter(file, fieldnames=FIELDNAMES)
+        writer = csv.DictWriter(file, fieldnames=RECORD_FIELDS)
 
         if needs_header:
             writer.writeheader()
@@ -107,13 +107,13 @@ def save_records(storage_path: Path, records: list[dict]) -> None:
     storage_path.parent.mkdir(parents=True, exist_ok=True)
 
     with storage_path.open("w", newline="", encoding="utf-8") as file:
-        writer = csv.DictWriter(file, fieldnames=FIELDNAMES)
+        writer = csv.DictWriter(file, fieldnames=RECORD_FIELDS)
         writer.writeheader()
 
         for record in records:
             row = {
                 field: record.get(field, "")
-                for field in FIELDNAMES
+                for field in RECORD_FIELDS
             }
 
             if isinstance(row["record_date"], date):
@@ -192,6 +192,12 @@ AI_RECOMMENDATION_FIELDS = [
     "forecast_date",
     "recommended_portions",
     "reason",
+    "verified_evidence",
+    "suggested_next_step",
+    "forecast_method",
+    "confidence",
+    "generated_at",
+    "warning",
 ]
 
 
@@ -202,6 +208,12 @@ def save_ai_recommendation(
     forecast_date: date,
     recommended_portions: int,
     reason: str,
+    verified_evidence: str,
+    suggested_next_step: str,
+    forecast_method: str,
+    confidence: str,
+    generated_at: datetime,
+    warning: str,
 ) -> None:
     """Save the final food preparation recommendation to CSV."""
     storage_path.parent.mkdir(parents=True, exist_ok=True)
@@ -217,6 +229,12 @@ def save_ai_recommendation(
         "forecast_date": forecast_date.isoformat(),
         "recommended_portions": recommended_portions,
         "reason": reason,
+        "verified_evidence": verified_evidence,
+        "suggested_next_step": suggested_next_step,
+        "forecast_method": forecast_method,
+        "confidence": confidence,
+        "generated_at": generated_at.isoformat(timespec="seconds"),
+        "warning": warning,
     }
 
     with storage_path.open(
@@ -232,3 +250,67 @@ def save_ai_recommendation(
 
         writer.writerow(row)
 
+
+def replace_ai_recommendation(
+    storage_path: Path,
+    user_name: str,
+    food_item: str,
+    forecast_date: date,
+    recommended_portions: int,
+    reason: str,
+    verified_evidence: str,
+    suggested_next_step: str,
+    forecast_method: str,
+    confidence: str,
+    generated_at: datetime,
+    warning: str,
+) -> None:
+    """Replace an existing forecast for the same user, item, and date."""
+
+    recommendations = load_ai_recommendations(storage_path)
+
+    target_date = forecast_date.isoformat()
+
+    # Remove the existing forecast with the same identifying details
+    recommendations = [
+        record for record in recommendations
+        if not (
+            record["user_name"].strip().lower() == user_name.strip().lower()
+            and record["food_item"].strip().lower() == food_item.strip().lower()
+            and record["forecast_date"] == target_date
+        )
+    ]
+
+    # Add the new forecast
+    recommendations.append({
+        "user_name": user_name,
+        "food_item": food_item,
+        "forecast_date": target_date,
+        "recommended_portions": recommended_portions,
+        "reason": reason,
+        "verified_evidence": verified_evidence,
+        "suggested_next_step": suggested_next_step,
+        "forecast_method": forecast_method,
+        "confidence": confidence,
+        "generated_at": generated_at.isoformat(timespec="seconds"),
+        "warning": warning,
+    })
+
+    # Rewrite the CSV with the updated records
+    with storage_path.open("w", newline="", encoding="utf-8") as file:
+        writer = csv.DictWriter(
+            file,
+            fieldnames=AI_RECOMMENDATION_FIELDS,
+        )
+        writer.writeheader()
+        writer.writerows(recommendations)
+
+
+def load_ai_recommendations(storage_path: Path) -> list[dict]:
+    """Load saved AI forecast recommendations from CSV."""
+    if not storage_path.exists():
+        return []
+
+    with storage_path.open("r", newline="", encoding="utf-8") as file:
+        reader = csv.DictReader(file)
+        return list(reader)
