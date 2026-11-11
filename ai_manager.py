@@ -189,3 +189,5 @@ def generate_forecast(
             f"Failed to process API response: {error}"
         )
         return fallback_response
+
+    print("Hello")
