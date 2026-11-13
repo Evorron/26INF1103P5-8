@@ -1,5 +1,0 @@
-# API key for runtime
-python-dotenv == 1.2.4
-
-# HTTP requests to Gemini API
-requests == 2.32.5
