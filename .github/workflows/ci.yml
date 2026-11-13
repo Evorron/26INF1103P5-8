@@ -34,7 +34,6 @@ jobs:
         pip install -r requirements.txt ruff pytest
 
     - name: Lint with "Ruff"
-      continue-on-error: True
       run: ruff check .
 
     - name: Run Unit Tests with "pytest"
