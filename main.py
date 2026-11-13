@@ -16,12 +16,52 @@ import forecast_adapter
 import logic_manager
 from datetime import datetime
 
+sales_storage = data_manager.CsvStorage(
+    data_manager.RECORDS_FILE,
+    data_manager.SalesRecord,
+    data_manager.RECORD_FIELDS,
+)
+
+sales_manager = data_manager.SalesRecordManager(
+    sales_storage
+)
+
+recommendation_storage = data_manager.CsvStorage(
+    data_manager.AI_RECOMMENDATIONS_FILE,
+    data_manager.AIRecommendation,
+    data_manager.AI_RECOMMENDATION_FIELDS,
+)
+
+recommendation_manager = data_manager.RecommendationManager(
+    recommendation_storage
+)
+
+def load_sales_as_dicts() -> list[dict]:
+
+    return [
+        {
+            **record.to_dict(),
+            "record_date": record.record_date,
+        }
+        for record in sales_manager.get_all()
+    ]
+
+
+def load_recommendations_as_dicts() -> list[dict]:
+
+    return [
+        recommendation.to_dict()
+        for recommendation in recommendation_manager.get_all()
+    ]
+
 
 def add_sales_record() -> None:
     """Collect, validate, and save one confirmed historical sales record."""
     record = io_manager.collect_sales_record()
     logic_manager.validate_sales_record(record)
-    data_manager.add_record(data_manager.RECORDS_FILE, record)
+    
+    sales_record = data_manager.SalesRecord.from_dict(record)
+    sales_manager.add(sales_record)
 
     # Retain the business type in the IO manager's temporary lookup cache only
     # after the record has been accepted and saved successfully.
@@ -35,9 +75,7 @@ def generate_forecast() -> None:
     request = io_manager.collect_forecast_infomation()
     
     # Load previously saved forecasts
-    existing_recommendations = data_manager.load_ai_recommendations(
-        data_manager.AI_RECOMMENDATIONS_FILE
-    )
+    existing_recommendations = load_recommendations_as_dicts()
 
     # Convert the requested date to the same format used in the CSV
     target_date = request["target_date"]
@@ -80,32 +118,32 @@ def generate_forecast() -> None:
             replace_existing = True
 
     # Generate the forecast only after the duplicate check
-    all_records = data_manager.load_records(data_manager.RECORDS_FILE)
+    all_records = load_sales_as_dicts()
     response = forecast_adapter.generate_logged_forecast(request, all_records)
 
     io_manager.show_forecast(response)
-    save_function = (
-        data_manager.replace_ai_recommendation
-        if replace_existing
-        else data_manager.save_ai_recommendation
+    recommendation = data_manager.AIRecommendation(
+        user_name=request["user_name"],
+        food_item=request["food_item"],
+        forecast_date=request["target_date"],
+        recommended_portions=response["suggested_portions"],
+        reason=response["reasoning"],
+        verified_evidence="; ".join(
+            item["claim"]
+            for item in response.get("evidence", [])
+        ),
+        suggested_next_step=response.get("business_advice") or "",
+        forecast_method=response["forecast_method"],
+        confidence=response["confidence"],
+        generated_at=datetime.now(),
+        warning=response.get("warning") or "",
     )
 
-    save_function(
-        data_manager.AI_RECOMMENDATIONS_FILE,
-        request["user_name"],
-        request["food_item"],
-        request["target_date"],
-        response["suggested_portions"],
-        response["reasoning"],
-        "; ".join(
-            item["claim"] for item in response.get("evidence", [])
-        ),
-        response.get("business_advice") or "",
-        response["forecast_method"],
-        response["confidence"],
-        datetime.now(),
-        response.get("warning") or "",
-    )
+
+    if replace_existing:
+        recommendation_manager.replace(recommendation)
+    else:
+        recommendation_manager.save(recommendation)
 
     if replace_existing:
         print("\nYour previous forecast has been replaced.")
@@ -116,7 +154,7 @@ def generate_forecast() -> None:
 def list_food_items() -> None:
     """Display the distinct food items saved for one named user."""
     user_name = input("Your name: ").strip()
-    all_records = data_manager.load_records(data_manager.RECORDS_FILE)
+    all_records = load_sales_as_dicts()
     items = logic_manager.food_items_for_user(user_name, all_records)
     io_manager.show_items(items)
 
@@ -124,7 +162,7 @@ def list_food_items() -> None:
 def view_records() -> None:
     """Display a user's saved records for a selected item and date range."""
     search_filters = io_manager.collect_record_search()
-    all_records = data_manager.load_records(data_manager.RECORDS_FILE)
+    all_records = load_sales_as_dicts()
     records = logic_manager.records_for_search(search_filters, all_records)
     io_manager.show_records(records)
 
@@ -137,9 +175,7 @@ def view_past_forecasts() -> None:
     food_item = input("Enter the food item: ").strip()
     forecast_date = input("Enter the forecast date (YYYY-MM-DD): ").strip()
 
-    recommendations = data_manager.load_ai_recommendations(
-        data_manager.AI_RECOMMENDATIONS_FILE
-    )
+    recommendations = load_recommendations_as_dicts()
 
     matching_forecasts = [
         record for record in recommendations
@@ -154,6 +190,8 @@ def view_past_forecasts() -> None:
 def run() -> None:
     """Run the menu flow supplied by the IO manager until the user exits."""
     io_manager.display_welcome()
+    sales_manager.load()
+    recommendation_manager.load()
 
     while True:
         try:
