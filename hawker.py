@@ -1,5 +1,11 @@
+from data_vaildation import date_vaildation
+from data_vaildation import positive_integer
+from data_vaildation import sold_portions
+from display_record import display_records
 
-def collect_sales_record(self):
+class Hawker:
+
+    def collect_sales_record(self):
         ##"Collect a record, display it to the user and save or edit"
  
         print("\nEnter historical sales information")
@@ -34,7 +40,7 @@ def collect_sales_record(self):
                 print("Please enter C or E.")
  
  
-def edit_sales_record(self, record: dict):
+    def edit_sales_record(self, record: dict):
         ## To allow users to edits it's records
         print("\nWhich detail would you like to edit?")
         print("1. Record date")
@@ -63,7 +69,8 @@ def edit_sales_record(self, record: dict):
         else:
             print("Please choose a number from 1 to 5.")
  
-def collect_forecast_infomation(self) -> dict:
+ 
+    def collect_forecast_infomation(self) -> dict:
         ## "Collect known infomation before preparing food"
         print("\nEnter forecast information")
  
@@ -75,7 +82,7 @@ def collect_forecast_infomation(self) -> dict:
         }
  
  
-def collect_record_search(self):
+    def collect_record_search(self):
         ##"Viewing historical records"
         print("\nView historical records")
  
