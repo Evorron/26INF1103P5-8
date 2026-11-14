@@ -5,6 +5,8 @@ from datetime import date, datetime
 from pathlib import Path
 from abc import ABC, abstractmethod
 from typing import TypeVar
+from storage_interface import IStorage
+from record import Record
 
 DATA_FOLDER = Path(__file__).resolve().parent / "data"
 RECORDS_FILE = DATA_FOLDER / "sales_records.csv"
@@ -38,21 +40,6 @@ AI_RECOMMENDATION_FIELDS = [
     "generated_at",
     "warning",
 ]
-
-
-class Record(ABC):
-    """Common interface for objects that can be stored in CSV files."""
-
-    @abstractmethod
-    def to_dict(self) -> dict:
-        raise NotImplementedError
-
-    @classmethod
-    @abstractmethod
-    def from_dict(cls, data: dict) -> "Record":
-        raise NotImplementedError
-
-T = TypeVar("T", bound=Record)
 
 
 class SalesRecord(Record):
@@ -187,58 +174,58 @@ class AIRecommendation(Record):
     def forecast_date(self) -> date:
         return self._forecast_date
 
-class CsvStorage:
-    def __init__(
-        self,
-        storage_path: Path,
-        record_type: type[T],
-        fieldnames: list[str],
-    ):
-        self._storage_path = storage_path
-        self._record_type = record_type
-        self._fieldnames = fieldnames
+# class CsvStorage:
+#     def __init__(
+#         self,
+#         storage_path: Path,
+#         record_type: type[T],
+#         fieldnames: list[str],
+#     ):
+#         self._storage_path = storage_path
+#         self._record_type = record_type
+#         self._fieldnames = fieldnames
 
-    def load(self) -> list[T]:
-        if not self._storage_path.exists():
-            return []
+#     def load(self) -> list[T]:
+#         if not self._storage_path.exists():
+#             return []
 
-        records = []
+#         records = []
 
-        with self._storage_path.open(
-            "r",
-            newline="",
-            encoding="utf-8",
-        ) as file:
-            reader = csv.DictReader(file)
+#         with self._storage_path.open(
+#             "r",
+#             newline="",
+#             encoding="utf-8",
+#         ) as file:
+#             reader = csv.DictReader(file)
 
-            for row in reader:
-                if row:
-                    records.append(self._record_type.from_dict(row))
+#             for row in reader:
+#                 if row:
+#                     records.append(self._record_type.from_dict(row))
 
-        return records
+#         return records
 
-    def save(self, records: list[T]) -> None:
-        self._storage_path.parent.mkdir(
-            parents=True,
-            exist_ok=True,
-        )
+#     def save(self, records: list[T]) -> None:
+#         self._storage_path.parent.mkdir(
+#             parents=True,
+#             exist_ok=True,
+#         )
 
-        with self._storage_path.open(
-            "w",
-            newline="",
-            encoding="utf-8",
-        ) as file:
-            writer = csv.DictWriter(
-                file,
-                fieldnames=self._fieldnames,
-            )
-            writer.writeheader()
+#         with self._storage_path.open(
+#             "w",
+#             newline="",
+#             encoding="utf-8",
+#         ) as file:
+#             writer = csv.DictWriter(
+#                 file,
+#                 fieldnames=self._fieldnames,
+#             )
+#             writer.writeheader()
 
-            for record in records:
-                writer.writerow(record.to_dict())
+#             for record in records:
+#                 writer.writerow(record.to_dict())
 
 class SalesRecordManager:
-    def __init__(self, storage: CsvStorage):
+    def __init__(self, storage: IStorage):
         self._storage = storage
         self._records: list[SalesRecord] = []
 
@@ -314,7 +301,7 @@ class SalesRecordManager:
         )
 
 class RecommendationManager:
-    def __init__(self, storage: CsvStorage):
+    def __init__(self, storage: IStorage):
         self._storage = storage
         self._recommendations: list[AIRecommendation] = []
 
