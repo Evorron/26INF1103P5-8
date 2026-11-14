@@ -1,11 +1,12 @@
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 DB_PATH = Path(__file__).resolve().parent / "data" / "hawker.db"
-DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 def setup_database():
-    with sqlite3.connect(DB_PATH) as conn:
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with closing(sqlite3.connect(DB_PATH)) as conn:
         cursor = conn.cursor()
 
         # Create Sales Table
@@ -35,6 +36,23 @@ def setup_database():
                 confidence TEXT,
                 generated_at TEXT,
                 warning TEXT
+            )
+        """)
+
+        cursor.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_sales_record_key
+            ON sales_records (
+                TRIM(user_name) COLLATE NOCASE,
+                TRIM(food_item) COLLATE NOCASE,
+                record_date
+            )
+        """)
+        cursor.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_forecast_key
+            ON ai_recommendations (
+                TRIM(user_name) COLLATE NOCASE,
+                TRIM(food_item) COLLATE NOCASE,
+                forecast_date
             )
         """)
         conn.commit()

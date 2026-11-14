@@ -1,45 +1,9 @@
-"""csv persistence for historical sales records and AI recommendations."""
+"""Record models and managers for sales records and AI recommendations."""
 
-import csv
 from datetime import date, datetime
-from pathlib import Path
-from abc import ABC, abstractmethod
-from typing import TypeVar
 from storage_interface import IStorage
 from record import Record
 
-DATA_FOLDER = Path(__file__).resolve().parent / "data"
-RECORDS_FILE = DATA_FOLDER / "sales_records.csv"
-
-AI_RECOMMENDATIONS_FILE = (
-    Path(__file__).resolve().parent
-    / "data"
-    / "ai_recommendations.csv"
-)
-
-RECORD_FIELDS = [
-    "user_name",
-    "business_type",
-    "record_date",
-    "food_item",
-    "portions_prepared",
-    "portions_sold",
-    "past_context",
-]
-
-AI_RECOMMENDATION_FIELDS = [
-    "user_name",
-    "food_item",
-    "forecast_date",
-    "recommended_portions",
-    "reason",
-    "verified_evidence",
-    "suggested_next_step",
-    "forecast_method",
-    "confidence",
-    "generated_at",
-    "warning",
-]
 
 
 class SalesRecord(Record):
@@ -174,55 +138,6 @@ class AIRecommendation(Record):
     def forecast_date(self) -> date:
         return self._forecast_date
 
-# class CsvStorage:
-#     def __init__(
-#         self,
-#         storage_path: Path,
-#         record_type: type[T],
-#         fieldnames: list[str],
-#     ):
-#         self._storage_path = storage_path
-#         self._record_type = record_type
-#         self._fieldnames = fieldnames
-
-#     def load(self) -> list[T]:
-#         if not self._storage_path.exists():
-#             return []
-
-#         records = []
-
-#         with self._storage_path.open(
-#             "r",
-#             newline="",
-#             encoding="utf-8",
-#         ) as file:
-#             reader = csv.DictReader(file)
-
-#             for row in reader:
-#                 if row:
-#                     records.append(self._record_type.from_dict(row))
-
-#         return records
-
-#     def save(self, records: list[T]) -> None:
-#         self._storage_path.parent.mkdir(
-#             parents=True,
-#             exist_ok=True,
-#         )
-
-#         with self._storage_path.open(
-#             "w",
-#             newline="",
-#             encoding="utf-8",
-#         ) as file:
-#             writer = csv.DictWriter(
-#                 file,
-#                 fieldnames=self._fieldnames,
-#             )
-#             writer.writeheader()
-
-#             for record in records:
-#                 writer.writerow(record.to_dict())
 
 class SalesRecordManager:
     def __init__(self, storage: IStorage):
@@ -312,6 +227,14 @@ class RecommendationManager:
         return list(self._recommendations)
 
     def save(self, recommendation: AIRecommendation) -> None:
+        if any(
+            self._is_same_forecast(existing, recommendation)
+            for existing in self._recommendations
+        ):
+            raise ValueError(
+                "A forecast already exists for this user, food item, and date."
+            )
+
         self._recommendations.append(recommendation)
         self._storage.save(self._recommendations)
 
@@ -319,18 +242,23 @@ class RecommendationManager:
         self._recommendations = [
             existing
             for existing in self._recommendations
-            if not (
-                existing.user_name.casefold()
-                == recommendation.user_name.casefold()
-                and existing.food_item.casefold()
-                == recommendation.food_item.casefold()
-                and existing.forecast_date
-                == recommendation.forecast_date
-            )
+            if not self._is_same_forecast(existing, recommendation)
         ]
 
         self._recommendations.append(recommendation)
         self._storage.save(self._recommendations)
 
+    @staticmethod
+    def _is_same_forecast(
+        first: AIRecommendation,
+        second: AIRecommendation,
+    ) -> bool:
+        return (
+            first.user_name.strip().casefold()
+            == second.user_name.strip().casefold()
+            and first.food_item.strip().casefold()
+            == second.food_item.strip().casefold()
+            and first.forecast_date == second.forecast_date
+        )
 
     
