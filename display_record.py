@@ -73,3 +73,113 @@ class display_records:
         print(f"Sold: {record['portions_sold']}")
         print(f"Leftover: {leftovers}")
         print(f"Past context: {record['past_context']}")
+
+
+class forecast_display:
+
+    @staticmethod
+    def show_forecast(response: dict):
+    ##Show AI's forecast without changing its suggested portions."""
+        recorded_sales = response["recorded_sales"]
+
+        print("\n" + "=" * 50)
+        print("             HAWKER AI")
+        print("          FORECAST REPORT")
+        print("=" * 50)
+
+        print("\n--- SALES OVERVIEW ---")
+        if recorded_sales:
+            average_recorded_sales = sum(recorded_sales) / len(recorded_sales)
+            print("Average recorded sales: " f"{average_recorded_sales:.1f} portions\n")
+        else:
+            print("Average recorded sales: Not available.\n")
+
+        print("\n--- RECOMMENDATION ---")
+        print(f"Suggested portions to prepare: " f"{response['suggested_portions']}")
+        print(f"Confidence: {response['confidence'].title()}")
+
+        print("\n--- REASON ---")
+        print(response["reasoning"])
+
+        print("\n--- VERIFIED EVIDENCE ---")
+        for item in response["evidence"]:
+            print(f"  • {item['claim']} ({item['metric']}: {item['value']})")
+
+        print("\n--- SUGGESTED NEXT STEP ---")
+        print(response["business_advice"])
+        if response["warning"]:
+            print("\n--- WARNING ---")
+        print(response["warning"])
+
+        print("\n" + "=" * 50 + "\n")
+
+    # to display forecast history for users
+    @staticmethod
+    def show_past_forecasts(recommendations: list[dict]) -> None:
+        """Display previously saved forecast recommendations."""
+
+        if not recommendations:
+            print("\nNo past forecasts found.")
+            return
+
+        for record in recommendations:
+            print("\n" + "=" * 50)
+            print("          HAWKER AI - PAST FORECAST")
+            print("=" * 50)
+
+            print(f"Forecast date : {record['forecast_date']}")
+            print(f"Owner         : {record['user_name']}")
+            print(f"Food item     : {record['food_item']}")
+
+            print("\n--- RECOMMENDATION ---")
+            print(f"Portions      : {record['recommended_portions']}")
+
+            print("\n--- EXPLANATION ---")
+            print(record['reason'])
+
+        
+            print("\n--- SUPPORTING EVIDENCE ---")
+
+            evidence = record['verified_evidence'].strip()
+
+            if evidence:
+                for item in evidence.split("; "):
+                    print(f"  • {item}")
+            else:
+                print("  No evidence available.")
+
+
+            print("\n--- SUGGESTED NEXT STEP ---")
+            print(
+                record['suggested_next_step']
+                or "No additional advice available."
+            )
+
+            print("\n--- FORECAST DETAILS ---")
+            # print(f"Method        : {record['forecast_method']}")
+            print(f"Confidence    : {record['confidence']}")
+            print(f"Generated at  : {record['generated_at']}")
+            print(f"Warning       : {record['warning'] or 'None'}")
+
+            print("=" * 50)
+
+    @staticmethod
+    def ask_duplicate_forecast_action() -> str:
+        """Ask the user what to do when a forecast already exists."""
+
+        print("\nA forecast already exists for this food item and date.")
+        print("1. View the existing forecast")
+        print("2. Regenerate and replace the existing forecast")
+        print("3. Cancel and return to the main menu")
+
+        while True:
+            choice = input("\nChoose an option (1-3): ").strip()
+
+            if choice == "1":
+                return "view"
+            elif choice == "2":
+                return "replace"
+            elif choice == "3":
+                return "cancel"
+            else:
+                print("Invalid choice. Please enter 1, 2, or 3.")
