@@ -5,6 +5,20 @@ from display_record import display_records
 
 class Hawker:
 
+    def clean_name(text):
+        return" ".join(text.split()).lower()
+
+
+    def __init__(self, user_name, business_type):
+        self.user_name = user_name
+        self.business_type = business_type
+        self.foods = {}
+        self.dates = date_vaildation() 
+        self.postive_int = positive_integer()
+        self.sold_portions = sold_portions
+        self.display_records = display_records   
+
+
     def collect_sales_record(self):
         ##"Collect a record, display it to the user and save or edit"
  
