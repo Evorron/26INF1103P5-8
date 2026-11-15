@@ -9,12 +9,12 @@ This module connects the six managers without duplicating their work:
 * ``ai_manager`` is called by the adapter when an AI estimate is needed.
 * ``activity_logger`` is called by the adapter to keep an audit trail.
 """
+from datetime import datetime
 
-import input_output_manager as io_manager
 import data_manager
 import forecast_adapter
+import input_output_manager as io_manager
 import logic_manager
-from datetime import datetime
 
 def add_sales_record() -> None:
     """Collect, validate, and save one confirmed historical sales record."""

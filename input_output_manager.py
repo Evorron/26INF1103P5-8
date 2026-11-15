@@ -1,8 +1,8 @@
 import csv
-from datetime import date
-from pathlib import Path
 import shutil
 import textwrap
+from datetime import date
+from pathlib import Path
 
 def display_welcome():
     ##"Display opening program title"
@@ -47,7 +47,7 @@ def check_business_type(user_name: str, business_type: str):
                             registered_business[normalized_name] = registered_type
                             break
             except Exception:
-                pass
+                print("Warning: Could not read sales_records.csv")
 
     if registered_type and business_type.lower() != registered_type.lower():
         raise ValueError(f"Business type for {user_name} must be '{registered_type}'.")
