@@ -10,7 +10,7 @@ This separation keeps AI communication, business rules, CSV handling, and
 screen output in their respective modules.
 """
 
-from math import ceil, floor, isfinite
+from math import ceil, floor
 from pathlib import Path
 from statistics import median
 from uuid import uuid4
@@ -18,7 +18,6 @@ from uuid import uuid4
 import activity_logger
 import ai_manager
 import logic_manager
-
 
 # Public integration point: this is the function other modules should call.
 

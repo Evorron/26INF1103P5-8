@@ -3,8 +3,6 @@ import os
 import requests
 from dotenv import load_dotenv
 import time
-from requests.exceptions import ConnectionError, Timeout
-
 
 # Load environment variables from .env
 load_dotenv(override=True)
@@ -12,7 +10,7 @@ load_dotenv(override=True)
 # Define default API URL endpoint and specific AI model to use
 DEFAULT_ENDPOINT = os.getenv("GROQ_API_URL","https://api.groq.com/openai/v1/chat/completions",).strip()
 DEFAULT_MODEL = os.getenv("GROQ_MODEL","openai/gpt-oss-20b",).strip()
-MAX_COMPLETION_TOKENS = int(os.getenv("GROQ_MAX_COMPLETION_TOKENS", 350).strip())
+MAX_COMPLETION_TOKENS = int(os.getenv("GROQ_MAX_COMPLETION_TOKENS", "350").strip())
 
 #DEFAULT_ENDPOINT = os.getenv("GEMINI_API_URL", "https://generativelanguage.googleapis.com/v1beta/interactions").strip()
 #DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.7-flash").strip()

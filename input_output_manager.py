@@ -3,9 +3,6 @@ from datetime import date
 from pathlib import Path
 import shutil
 import textwrap
-from urllib import response
-
-
 
 def display_welcome():
     ##"Display opening program title"

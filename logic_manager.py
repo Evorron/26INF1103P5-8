@@ -12,7 +12,6 @@ input today and imported CSV records in a future version of the program.
 from datetime import date
 from math import floor
 
-
 # Input-quality rules used for interactive input and future data imports.
 CONTEXT_WORD_LIMIT = 150
 LOW_CONFIDENCE_RECORD_COUNT = 7

@@ -16,7 +16,6 @@ import forecast_adapter
 import logic_manager
 from datetime import datetime
 
-
 def add_sales_record() -> None:
     """Collect, validate, and save one confirmed historical sales record."""
     record = io_manager.collect_sales_record()
