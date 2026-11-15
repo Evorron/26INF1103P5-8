@@ -16,6 +16,7 @@ import forecast_adapter
 import input_output_manager as io_manager
 import logic_manager
 
+
 def add_sales_record() -> None:
     """Collect, validate, and save one confirmed historical sales record."""
     record = io_manager.collect_sales_record()

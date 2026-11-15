@@ -4,6 +4,7 @@ import textwrap
 from datetime import date
 from pathlib import Path
 
+
 def display_welcome():
     ##"Display opening program title"
     print("\n")
@@ -11,7 +12,6 @@ def display_welcome():
     print("Welcome to Hawker AI!")
     print("An enhance tools for food preparation forecasting.\n")
    
-
 def display_all():
     ##"Display main menu"
     print("------------MENU-----------------")
@@ -46,8 +46,8 @@ def check_business_type(user_name: str, business_type: str):
                             registered_type = row.get("business_type")
                             registered_business[normalized_name] = registered_type
                             break
-            except Exception:
-                print("Warning: Could not read sales_records.csv")
+            except csv.Error:
+                print("Warning: Could not read sales_records.csv (csv.Error)")
 
     if registered_type and business_type.lower() != registered_type.lower():
         raise ValueError(f"Business type for {user_name} must be '{registered_type}'.")
