@@ -1,12 +1,11 @@
 from ai_provider import AbstractAIForecastProvider, GroqForecastProvider
 from forecast_result import ForecastResult
 
+# AI Manager class that manages the AI forecast provider and generates forecasts
 class AIManager:
-    """
-    Controller class responsible for coordinating AI prompt execution,
-    provider routing, and returning formatted schema responses.
-    """
 
+    # Accepts any subclass of AbstractAIForecastProvider
+    # Default provider set to GroqForecastProvider if none is provided
     def __init__(self, provider: AbstractAIForecastProvider | None = None):
         self._provider: AbstractAIForecastProvider = (
             provider if provider else GroqForecastProvider()
@@ -22,4 +21,6 @@ class AIManager:
         result: ForecastResult = self._provider.generate_forecast(
             evidence_payload, feedback
         )
+
+        # Converts ForecastResult object to dictionary
         return result.to_dict()
