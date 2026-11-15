@@ -1,23 +1,21 @@
 from abc import ABC, abstractmethod
 import json
 import os
-import time
 import requests
+import time
 from requests.exceptions import ConnectionError, Timeout
 from forecast_result import ForecastResult
 
-
+# Usage of Abstract Base Class (ABC)
 class AbstractAIForecastProvider(ABC):
-    """Abstract Base Class (Interface) for all AI Forecast Providers."""
 
     @abstractmethod
     def generate_forecast(
         self, evidence_payload: dict, feedback: list | None = None
     ) -> ForecastResult:
-        """Abstract contract for generating forecasts."""
         pass
 
-
+# Usage of Inheritance (GroqForecastProvider implements the AbstractAIForecastProvider interface)
 class GroqForecastProvider(AbstractAIForecastProvider):
 
 # System instructions for the AI model to follow when generating forecasts
@@ -99,6 +97,8 @@ Do not include Markdown, headings, code fences, or text outside the JSON.
     def generate_forecast(
         self, evidence_payload: dict, feedback: list | None = None
     ) -> ForecastResult:
+
+        # Exception Handling (Checks for valid API key & handles connection issues)
         if not self._api_key:
             print("\n[AI Manager Warning] GROQ_API_KEY not found in .env file.")
             return self._get_fallback_result("Groq API key unconfigured.")
@@ -122,6 +122,7 @@ Do not include Markdown, headings, code fences, or text outside the JSON.
                 {"role": "system", "content": self.SYSTEM_INSTRUCTIONS},
                 {"role": "user", "content": user_input},
             ],
+            # low temp means focused and consistent output, reducing randomness of response output
             "temperature": 0.2,
             "max_completion_tokens": self._max_tokens,
             "reasoning_effort": "low",
@@ -135,6 +136,7 @@ Do not include Markdown, headings, code fences, or text outside the JSON.
             },
         }
 
+    # Retries maximum of 3 times
     def _execute_request_with_retry(self, request_body: dict) -> str | None:
         headers = {
             "Authorization": f"Bearer {self._api_key}",
@@ -172,6 +174,7 @@ Do not include Markdown, headings, code fences, or text outside the JSON.
             print(f"\n[AI Manager Error] Failed to parse response: {err}")
             return self._get_fallback_result("Malformed JSON output.")
 
+    # Neutral fallback result (1.0 score)
     def _get_fallback_result(self, reason: str) -> ForecastResult:
         return ForecastResult(
             demand_impact_factor=1.0,
