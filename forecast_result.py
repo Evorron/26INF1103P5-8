@@ -1,5 +1,6 @@
 class ForecastResult:
-    
+
+    # Usage of encapsulation via protected attributes and property getters
     def __init__(
         self,
         demand_impact_factor: float,
@@ -11,7 +12,8 @@ class ForecastResult:
         status: str = "success"
 
     ):
-        self._demand_impact_factor: float = float(demand_impact_factor)
+        # Protected attributes to prevent accidental modification
+        self._demand_impact_factor: float = float(demand_impact_factor)     # ensures that the value always contains valid number
         self._context_assessment: str = context_assessment
         self._confidence_score: str = confidence_score
         self._factors_considered: list[str] = factors_considered
@@ -40,6 +42,7 @@ class ForecastResult:
     def factors_considered(self) -> list[str]:
         return self._factors_considered
 
+    # Converts back to dictionary for data handling
     def to_dict(self) -> dict:
         return {
             "status": self._status,
