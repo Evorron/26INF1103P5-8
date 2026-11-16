@@ -5,7 +5,7 @@ from data_formatting import DataFormatting
 class display_records: 
 
     @staticmethod
-    def show_items(items: list[str]):
+    def show_items(items: list[str]) -> None:
     ##Display saved food items
         if not items:
             print("No food items have been recorded for this name")
@@ -16,7 +16,7 @@ class display_records:
         print("\n")  ##"Add a new line for better readability"
 
     @staticmethod
-    def show_records(records: list[dict]):
+    def show_records(records: list[dict]) -> None:
     ##Display all records that match the selected item and dates
         if not records:
             print("No records were found for that food item and date range")
@@ -58,7 +58,7 @@ class display_records:
         format.format_table(headers,rows)
 
     @staticmethod
-    def record_preview(record: dict):
+    def record_preview(record: dict) -> None:
     ##Display recent new record before it is saved
         leftovers = record["portions_prepared"] - record["portions_sold"]
 
@@ -75,7 +75,7 @@ class display_records:
         print(f"Past context: {record['past_context']}")
 
     @staticmethod
-    def show_sales_summary(summary_data: dict):
+    def show_sales_summary(summary_data: dict) -> None:
         ##Display the aggregated sales statistics for a date range
         ##New feature to show overall sales summary
         print("\n" + "=" * 50)
@@ -94,7 +94,7 @@ class display_records:
 class forecast_display:
 
     @staticmethod
-    def show_forecast(response: dict):
+    def show_forecast(response: dict) -> None:
     ##Show AI's forecast without changing its suggested portions
         recorded_sales = response["recorded_sales"]
 
