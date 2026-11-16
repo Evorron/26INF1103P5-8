@@ -74,12 +74,28 @@ class display_records:
         print(f"Leftover: {leftovers}")
         print(f"Past context: {record['past_context']}")
 
+    @staticmethod
+    def show_sales_summary(summary_data: dict):
+        ##Display the aggregated sales statistics for a date range
+        ##New feature to show overall sales summary
+        print("\n" + "=" * 50)
+        print(f"        SALES SUMMARY: {summary_data['food_item'].upper()}")
+        print(f"        Date Range: {summary_data['start_date']} to {summary_data['end_date']}")
+        print("=" * 50)
+        
+        print(f"Total Portions Prepared : {summary_data['total_prepared']}")
+        print(f"Total Portions Sold     : {summary_data['total_sold']}")
+        print(f"Average Wastage         : {summary_data['wastage_percentage']:.2f}%")
+        print(f"Average Daily Sales     : {summary_data['average_daily_sales']:.2f} portions")
+        
+        print("=" * 50 + "\n")
+
 
 class forecast_display:
 
     @staticmethod
     def show_forecast(response: dict):
-    ##Show AI's forecast without changing its suggested portions."""
+    ##Show AI's forecast without changing its suggested portions
         recorded_sales = response["recorded_sales"]
 
         print("\n" + "=" * 50)
