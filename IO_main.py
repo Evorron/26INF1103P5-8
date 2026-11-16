@@ -47,7 +47,35 @@ class IOManager:
                     "past_context": record._past_context
                 })
         return records
-    
+
+    def authenticate_user(self) -> tuple[str, str]:
+        while True:
+            user_name = input("Enter your name: ").strip()
+            if not user_name:
+                print("Name cannot be empty. Please try again.")
+                continue
+
+            biz_type_input = input("Enter your business type: ").strip()
+            if not biz_type_input:
+                print("Business type cannot be empty. Please try again.")
+                continue
+
+            normalized_name = " ".join(user_name.split()).lower()
+            
+            
+            if normalized_name not in self.registered_business:
+                for record in self.sales_manager.get_all():
+                    if record.user_name.strip().lower() == normalized_name:
+                        self.registered_business[normalized_name] = record._business_type
+                        break
+
+            validator = business_type(user_name, self.registered_business)
+            try:
+                validator.check_business_type(biz_type_input)
+                return user_name, biz_type_input
+            except ValueError as err:
+                print(f"\n[Error] {err}")
+                print("Existing name does not match the registered business type. Please re-enter.\n")    
 
     def run_application(self) -> None:
 
