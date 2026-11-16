@@ -14,6 +14,6 @@ def display_all():
     print("3. List my recorded food items")
     print("4. View historical records")
     print("5. View past forecasts")
-    print("6. Exit")
-
-    return input("\nChoose an option: ").strip()  ##"To prevent breaking due to typos"
+    print("6. View sales summary report") ## New feature
+    print("7. Exit")                   
+    return input("\nChoose an option: ").strip() ##"To prevent breaking due to typos"
