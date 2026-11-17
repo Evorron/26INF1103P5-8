@@ -1,6 +1,6 @@
-from data_vaildation import date_vaildation
-from data_vaildation import positive_integer
-from data_vaildation import sold_portions
+from data_validation import date_vaildation
+from data_validation import positive_integer
+from data_validation import sold_portions
 from display_record import display_records
 
 class Hawker:
