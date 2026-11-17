@@ -1,6 +1,7 @@
 from datetime import date
 
-class positive_integer():
+
+class positive_integer:
 
     def check_positive_integer(self, input_str) -> int:
         while True:
@@ -14,7 +15,7 @@ class positive_integer():
             input_str = input("Try again: ").strip()  ##checks for users-vaildation for 'positive int'
 
 
-class sold_portions():
+class sold_portions:
 
     def __init__(self, portions_prepared) -> int:
         self.portions_prepared = portions_prepared
@@ -31,7 +32,7 @@ class sold_portions():
             input_str = input("Try again: ").strip()
 
 
-class business_type(): 
+class business_type: 
 
 
     def __init__(self, user_name, registered_business):
@@ -51,7 +52,7 @@ class business_type():
             raise ValueError(f"Business type for {self.user_name} must be '{registered_type}'.")
 
 
-class date_vaildation():
+class date_vaildation:
 
     def read_date(self, input_str) -> date:
         ##Read a valid ISO date

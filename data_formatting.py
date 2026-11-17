@@ -1,5 +1,6 @@
 import textwrap
 
+
 class DataFormatting:
     def __init__(self, widths: list[int]):
         """Initialize with the column widths calculated for the table."""

@@ -1,9 +1,5 @@
-from datetime import date
-from pathlib import Path
-import csv
-from abc import ABC, abstractmethod
 
-class validation():
+class validation:
 
     def check_values(self, prompt):                    
         while True:

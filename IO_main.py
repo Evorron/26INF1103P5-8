@@ -1,9 +1,7 @@
-from datetime import date
-from pathlib import Path
-from display_menu import display_welcome, display_all
+from data_validation import business_type, date_vaildation, positive_integer
+from display_menu import display_all, display_welcome
 from display_record import display_records, forecast_display
 from hawker import Hawker
-from data_validation import business_type, date_vaildation, positive_integer, sold_portions
 
 
 class IOManager:
@@ -85,7 +83,7 @@ class IOManager:
         
         ##Instantiate validation classes from data_vaildation.py
         date_validator = date_vaildation()
-        pos_int_validator = positive_integer()
+        positive_integer()
 
         while True:
             choice = display_all()
@@ -160,8 +158,9 @@ class IOManager:
                 forecast_display.show_forecast(forecast_response)
 
                 # 2. SAVE the forecast to the database using YOUR OOP class
-                from data_manager import AIRecommendation
                 from datetime import datetime
+
+                from data_manager import AIRecommendation
 
                 new_recommendation = AIRecommendation(
                     user_name=user_name,
@@ -185,7 +184,7 @@ class IOManager:
 
             elif choice == "3":
                 records = self.load_sales_records(user_name)
-                unique_items = sorted(set(r["food_item"] for r in records))
+                unique_items = sorted({r["food_item"] for r in records})
                 display_records.show_items(unique_items)
 
             elif choice == "4":
