@@ -3,10 +3,12 @@ __pycache__/
 *.py[cod]
 *.pyc
 
-# Locally generated test inventory data
-data/records.csv
+# Locally generated inventory data
+data/
+*.db
 
 # Ignore sensitive keys
-.env   
+.env
+.env/local
 
 

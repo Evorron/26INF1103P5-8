@@ -9,9 +9,8 @@ when the ``AI_LOG_FULL_CONTENT`` environment variable is explicitly enabled.
 
 import json
 import os
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-
 
 # Public functions are grouped by the stage of a forecasting request they log.
 

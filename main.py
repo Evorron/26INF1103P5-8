@@ -5,16 +5,39 @@ This module connects the six managers without duplicating their work:
 * ``Input_output_manager`` collects and displays information.
 * ``logic_manager`` validates data and applies business rules.
 * ``data_manager`` reads and writes CSV files.
-* ``forecast_adapter`` creates a safe, user-facing forecast.
+* ``forecast_coordinator`` creates a safe, user-facing forecast.
 * ``ai_manager`` is called by the adapter when an AI estimate is needed.
 * ``activity_logger`` is called by the adapter to keep an audit trail.
 """
-
-import input_output_manager as io_manager
-import data_manager
-import forecast_adapter
-import logic_manager
 from datetime import datetime
+from pathlib import Path
+
+import data_manager
+import database_storage
+import forecast_coordinator
+import input_output_manager as io_manager
+import logic_manager
+from IO_main import IOManager
+from setup_db import DatabaseSchema
+
+# Define the database path
+DB_PATH = Path(__file__).resolve().parent / "data" / "hawker.db"
+
+# --- SALES MANAGER SETUP ---
+sales_storage = database_storage.DatabaseStorage(
+    DB_PATH, 
+    "sales_records", 
+    data_manager.SalesRecord
+)
+sales_manager = data_manager.SalesRecordManager(sales_storage)
+
+# --- AI MANAGER SETUP ---
+recommendation_storage = database_storage.DatabaseStorage(
+    DB_PATH, 
+    "ai_recommendations", 
+    data_manager.AIRecommendation
+)
+recommendation_manager = data_manager.RecommendationManager(recommendation_storage)
 
 
 def add_sales_record() -> None:
@@ -81,7 +104,7 @@ def generate_forecast() -> None:
 
     # Generate the forecast only after the duplicate check
     all_records = data_manager.load_records(data_manager.RECORDS_FILE)
-    response = forecast_adapter.generate_logged_forecast(request, all_records)
+    response = forecast_coordinator.generate_logged_forecast(request, all_records)
 
     io_manager.show_forecast(response)
     save_function = (
@@ -184,5 +207,18 @@ def run() -> None:
             return
 
 
+# if __name__ == "__main__":
+#     run()
+
 if __name__ == "__main__":
-    run()
+    # 1. initialize the database schema
+    DatabaseSchema(DB_PATH).initialize()
+
+    sales_manager.load()
+    recommendation_manager.load()
+    
+    # 2. Pass the loaded managers to IOManager
+    app = IOManager(sales_manager, recommendation_manager)
+    
+    # 3. Run menu loop
+    app.run_application()
