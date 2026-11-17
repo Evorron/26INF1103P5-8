@@ -20,7 +20,6 @@ import logic_manager
 from IO_main import IOManager
 from setup_db import DatabaseSchema
 
-
 # Define the database path
 DB_PATH = Path(__file__).resolve().parent / "data" / "hawker.db"
 

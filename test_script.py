@@ -12,6 +12,7 @@ from data_manager import SalesRecord, SalesRecordManager
 from database_storage import DatabaseStorage
 from setup_db import DatabaseSchema
 
+
 class TestActualApplicationOutputOffline(unittest.TestCase):
 
     @patch('ai_manager.requests.post')
