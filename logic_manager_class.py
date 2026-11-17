@@ -1,4 +1,5 @@
 from datetime import date
+
 from forecast_rules import ForecastRules
 
 """

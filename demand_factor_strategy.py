@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+
 from demand_factor_result import DemandFactorResult
 
 """

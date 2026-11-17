@@ -1,8 +1,8 @@
 import ai_manager
 import data_manager
-from forecast_coordinator_class import ForecastCoordinator
 from ai_factor_strategy import ai_factor_strategy
 from baseline_factor_strategy import baseline_factor_strategy
+from forecast_coordinator_class import ForecastCoordinator
 from logic_manager import default_logic
 
 """

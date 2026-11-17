@@ -2,8 +2,8 @@ from pathlib import Path
 from uuid import uuid4
 
 import activity_logger
-from demand_factor_strategy import DemandFactorStrategy
 from demand_factor_result import DemandFactorResult
+from demand_factor_strategy import DemandFactorStrategy
 from logic_manager_class import LogicManager
 
 """

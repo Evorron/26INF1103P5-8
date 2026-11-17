@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import data_manager
-import forecast_adapter
+import forecast_coordinator
 import input_output_manager as io_manager
 
 
@@ -70,7 +70,7 @@ class TestActualApplicationOutputOffline(unittest.TestCase):
             all_records = data_manager.load_records(sales_file)
             
             # This triggers the actual production pipeline (adapter -> logic -> ai_manager mock)
-            forecast_response = forecast_adapter.generate_logged_forecast(request, all_records)
+            forecast_response = forecast_coordinator.generate_logged_forecast(request, all_records)
 
             # 7. Print the exact visual report using your actual IO display function
             io_manager.show_forecast(forecast_response)
