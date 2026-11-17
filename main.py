@@ -19,7 +19,6 @@ import database_storage
 import forecast_coordinator
 import input_output_manager as io_manager
 import logic_manager
-
 from setup_db import setup_database
 
 # Define the database path

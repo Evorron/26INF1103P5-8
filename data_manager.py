@@ -6,7 +6,6 @@ from record import Record
 from storage_interface import IStorage
 
 
-
 class SalesRecord(Record):
     def __init__(
         self,
