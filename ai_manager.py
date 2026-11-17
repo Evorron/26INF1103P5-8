@@ -1,5 +1,7 @@
 import os
-import requests # noqa: F401
+
+import requests  # noqa: F401
+
 from ai_provider import AbstractAIForecastProvider, GroqForecastProvider
 from forecast_result import ForecastResult
 
