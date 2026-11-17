@@ -1,10 +1,14 @@
-from abc import ABC, abstractmethod
 import json
 import os
-import requests
 import time
+from abc import ABC, abstractmethod
+from typing import ClassVar
+
+import requests
 from requests.exceptions import ConnectionError, Timeout
+
 from forecast_result import ForecastResult
+
 
 # Usage of Abstract Base Class (ABC)
 class AbstractAIForecastProvider(ABC):
@@ -17,10 +21,7 @@ class AbstractAIForecastProvider(ABC):
 
 # Usage of Inheritance (GroqForecastProvider implements the AbstractAIForecastProvider interface)
 class GroqForecastProvider(AbstractAIForecastProvider):
-
-# System instructions for the AI model to follow when generating forecasts
-    SYSTEM_INSTRUCTIONS = """
-You are a reliable and renowned advisor that helps food-and-beverage businesses
+    SYSTEM_INSTRUCTIONS: ClassVar[str] = """You are a reliable and renowned advisor that helps food-and-beverage businesses
 estimate how many portions to prepare for one food item.
 
 Your role is to analyse only the supplied historical sales records and the
@@ -59,11 +60,10 @@ honest about uncertainty and limited historical data. Do not make claims that
 cannot be supported by the supplied records.
 
 Return only a valid JSON object that follows the required response schema.
-Do not include Markdown, headings, code fences, or text outside the JSON.
-""".strip()
+Do not include Markdown, headings, code fences, or text outside the JSON.""".strip()
 
 # Defining the exact structure of the expected response from the AI
-    RESPONSE_SCHEMA = {
+    RESPONSE_SCHEMA: ClassVar[dict] = {
         "type": "object",
         "additionalProperties": False,
         "properties": {
