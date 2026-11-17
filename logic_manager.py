@@ -1,8 +1,16 @@
-"""Keep the function names used by the existing program."""
-
 from forecast_rules import ForecastRules
 from logic_manager_class import LogicManager
 
+"""
+Overall Responsibility: Provides the entry points other modules can use to access the business logic
+
+Main Components:
+        'default_logic' - the dfeault LogicManager Object.
+        Method aliases - expose object methods through calls, such as 'logic_manager.validate_sales_record()'
+        Exported settings - make exsiting rule constants accessible through this module
+
+This file connects callers to the implementation; the business logic is defined in 'logic_manager_class.py'.
+"""
 
 default_logic = LogicManager()
 

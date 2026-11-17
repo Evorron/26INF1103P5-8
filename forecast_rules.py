@@ -1,8 +1,17 @@
-"""Keep the numerical forecast rules together"""
-
-
 from math import ceil, floor
 from statistics import median
+
+"""
+Overall responsibility: Applies numerical forecasting policies to calculate and constrain preparation quantities.
+
+Main components:
+- ForecastRules — groups numerical policies.
+- Policy constants — define history thresholds, quantity multipliers, weekday limits, and shift thresholds.
+- calculate_quantity() — applies the demand factor to median sales and enforces bounds.
+- maximum_quantity() — calculates the historical upper limit.
+- History/weekday/shift checks — evaluate whether relevant numerical conditions are satisfied.
+- for_ai_payload() — supplies relevant rule settings for the evidence payload.
+"""
 
 class ForecastRules:
     LOW_CONFIDENCE_RECORD_COUNT = 7

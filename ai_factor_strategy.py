@@ -1,12 +1,21 @@
-"""Use the AI Manager to obtain a demand estimate from Groq."""
-
-
 import ai_manager
-from demand_estimator import DemandEstimator
-from forecast_estimate import ForecastEstimate
+from demand_factor_strategy import DemandFactorStrategy
+from demand_factor_result import DemandFactorResult
 
-class GroqEstimator(DemandEstimator):
-    def estimate(self, payload: dict) -> ForecastEstimate | None:
+"""
+Overall responsibility: Obtains the AI manager’s reply and converts it into the common demand-factor result.
+
+Main components:
+- AIFactorStrategy — the AI-based implementation.
+- get_factor_result() — calls the AI manager and prepares the result.
+- _normalise_factors() — prepares the factors list.
+- ai_factor_strategy — the default instance.
+
+The AI model performs the analysis; this class converts the returned information for the coordinator.
+"""
+
+class AIFactorStrategy(DemandFactorStrategy):
+    def get_factor_result(self, payload: dict) -> DemandFactorResult | None:
         reply = ai_manager.generate_forecast(payload)
         if reply.get("status") != "success":
             return None
@@ -33,10 +42,10 @@ class GroqEstimator(DemandEstimator):
             notes.append(data_limitations)
         notes.append("This recommendation considered: " + "; ".join(factors) + ".")
 
-        return ForecastEstimate(
+        return DemandFactorResult(
             factor = factor, 
             confidence = confidence,
-            method = "gemini-ai",
+            method = "gemini_ai",
             reasoning = "\n".join(f" {note}" for note in notes),
             factors = factors,
             advice_ending = "to refine future records",
@@ -57,4 +66,4 @@ class GroqEstimator(DemandEstimator):
 
         return ["Groq demand-impact assessment"]
 
-groq_estimator = GroqEstimator()    
+ai_factor_strategy = AIFactorStrategy()

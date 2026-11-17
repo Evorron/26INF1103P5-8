@@ -1,10 +1,21 @@
-"""Validate sales records and prepare evidence for forecasting"""
-
-
 from datetime import date
 from forecast_rules import ForecastRules
 
+"""
+Overall Responsibility: Checks business data, selects relevant sales history, prepares forecasting evidence, and checks the completed forecast.
+
+Main Components:
+        LogicManager - Class containing domain operations
+        '_forecast_rules' - its internally created numerical-rules object
+        Validation Methods - check names, dates, portion, context, requests, and search filters
+        Record-Selection Methods - find records for the correct user, food item, and date range
+        'build_ai_payload()' - prepares structured evidence for AI processing
+        'calculate_evidence_metrics()' - calculates historical facts such as counts, maximum sales, and averages.
+        'validate_ai_response()' — checks the assembled forecast against enforced domain constraints.
+"""
+
 class LogicManager:
+
     CONTEXT_WORD_LIMIT = 150
     EVIDENCE_TOLERANCE = 0.01
 

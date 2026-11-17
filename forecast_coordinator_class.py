@@ -1,18 +1,29 @@
-"""Coordinate one forecast using the logic manager and the estimators"""
-
-
 from pathlib import Path
 from uuid import uuid4
 
 import activity_logger
-from demand_estimator import DemandEstimator
-from forecast_estimate import ForecastEstimate
+from demand_factor_strategy import DemandFactorStrategy
+from demand_factor_result import DemandFactorResult
 from logic_manager_class import LogicManager
 
-class ForecastAdapter:
-    def __init__(self, logic: LogicManager, estimators: list[DemandEstimator], log_path: Path, model: str,):
+"""
+Overall responsibility: Coordinates the steps required to produce a completed forecast.
+
+Main components:
+- ForecastCoordinator — controls the workflow.
+- _logic — delegates domain operations to LogicManager.
+- _factor_strategies — stores the ordered estimation approaches.
+- _log_path / _model — retain audit configuration and metadata.
+- generate_logged_forecast() — runs forecasting with request/result/error logging.
+- _choose_factor_result() — accepts the first available strategy result.
+- _build_response() — combines the result, quantity, confidence, advice, and evidence, then requests validation.
+"""
+
+class ForecastCoordinator:
+
+    def __init__(self, logic: LogicManager, factor_strategies: list[DemandFactorStrategy], log_path: Path, model: str,):
         self._logic = logic
-        self._estimators = estimators
+        self._factor_strategies = factor_strategies
         self._log_path = log_path
         self._model = model
 
@@ -41,32 +52,32 @@ class ForecastAdapter:
         if evidence_payload is None:
             evidence_payload = self._logic.build_ai_payload(request, historical_records)
 
-        estimate = self._choose_estimate(evidence_payload)
-        return self._build_response(request, historical_records, estimate)
+        factor_result = self._choose_factor_result(evidence_payload)
+        return self._build_response(request, historical_records, factor_result)
 
-    def _choose_estimate(self, payload: dict) -> ForecastEstimate:
-        for estimator in self._estimators:
-            estimate = estimator.estimate(payload)
-            if estimate is not None:
-                return estimate
+    def _choose_factor_result(self, payload: dict) -> DemandFactorResult:
+        for factor_strategy in self._factor_strategies:
+            factor_result = factor_strategy.get_factor_result(payload)
+            if factor_result is not None:
+                return factor_result
 
-        raise RuntimeError("No demand estimate is available.")
+        raise RuntimeError("No demand-factor result is available.")
 
-    def _build_response(self, request: dict, historical_records: list[dict], estimate: ForecastEstimate) -> dict:
+    def _build_response(self, request: dict, historical_records: list[dict], factor_result: DemandFactorResult) -> dict:
         metrics = self._logic.calculate_evidence_metrics(historical_records, request["target_date"])
         sales = [record["portions_sold"] for record in historical_records]
         justification = None
 
         if request["future_context"].strip():
-            justification = estimate.context_justification
+            justification = factor_result.context_justification
 
 
         uses_future_context = justification is not None
-        quantity = self._logic.calculate_quantity(estimate.factor, sales, metrics, uses_future_context)
+        quantity = self._logic.calculate_quantity(factor_result.factor, sales, metrics, uses_future_context)
         maximum_sold = int(metrics["historical_maximum_sold"])
 
-        confidence = estimate.confidence
-        warning = estimate.warning
+        confidence = factor_result.confidence
+        warning = factor_result.warning
 
         if self._logic.has_limited_history(len(sales)):
             confidence = "low"
@@ -74,18 +85,18 @@ class ForecastAdapter:
                 warning = ("Limited History is available; record more sales before relying on a higher-confidence forecast")
 
         response = {
-            "forecast_method": estimate.method,
+            "forecast_method": factor_result.method,
             "suggested_portions": quantity,
             "recorded_sales": sales,
             "confidence": confidence,
-            "reasoning": estimate.reasoning,
-            "business_advice": (f"Prepare {quantity} portions, then compare sales and leftovers after service {estimate.advice_ending}"),
-            "factors_considered": estimate.factors,
+            "reasoning": factor_result.reasoning,
+            "business_advice": (f"Prepare {quantity} portions, then compare sales and leftovers after service {factor_result.advice_ending}"),
+            "factors_considered": factor_result.factors,
             "evidence": [
                 {
                     "metric": "record_count",
                     "value": metrics["record_count"],
-                    "claim": f"The {estimate.evidence_name} uses {len(sales)} saved sales record.",
+                    "claim": f"The {factor_result.evidence_name} uses {len(sales)} saved sales record.",
                 },
                 {
                     "metric": "historical_maximum_sold",
@@ -99,12 +110,12 @@ class ForecastAdapter:
             "uses_historical_shift": False,
             "historical_shift_justification": None,
         }
-        if estimate.weekday_analysis is not None:
-            response["weekday_analysis"] = estimate.weekday_analysis
+        if factor_result.weekday_analysis is not None:
+            response["weekday_analysis"] = factor_result.weekday_analysis
 
 
         issues = self._logic.validate_ai_response(response, request, historical_records)
         if issues:
-            raise RuntimeError(f"The {estimate.error_name} could not meet the safety rules: " + "; ".join(issues))
+            raise RuntimeError(f"The {factor_result.error_name} could not meet the safety rules: " + "; ".join(issues))
         return response
 
