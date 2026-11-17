@@ -12,14 +12,14 @@ This module connects the six managers without duplicating their work:
 from datetime import datetime
 from pathlib import Path
 
-from IO_main import IOManager
-
 import data_manager
 import database_storage
 import forecast_coordinator
 import input_output_manager as io_manager
 import logic_manager
+from IO_main import IOManager
 from setup_db import DatabaseSchema
+
 
 # Define the database path
 DB_PATH = Path(__file__).resolve().parent / "data" / "hawker.db"

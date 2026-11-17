@@ -6,7 +6,6 @@ from datetime import date, timedelta
 from pathlib import Path
 from unittest.mock import patch
 
-import data_manager
 import forecast_coordinator
 import input_output_manager as io_manager
 from data_manager import SalesRecord, SalesRecordManager
