@@ -8,7 +8,7 @@ on:
 
 # Workflow
 jobs:
-  build-and-push:
+  build_and_push:
     name: Build and Push to Docker Hub
     runs-on: ubuntu-latest
 
@@ -25,13 +25,29 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and Push Docker Image
+      - name: Build Docker Image
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: true
+          load: true
+          push: false
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/hawkerai:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/hawkerai:${{ github.run_number }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Verify Volume Mount Persistence
+        run: |
+          mkdir -p ./test-mount-data
+          docker run --rm \
+            -v "${{ github.workspace }}/test-mount-data:/app/data" \
+            ${{ secrets.DOCKERHUB_USERNAME }}/hawkerai:latest \
+            python -c "import main; import pathlib; pathlib.Path('/app/data/mount_ok.txt').write_text('ok')"
+          test -f ./test-mount-data/mount_ok.txt
+
+        # 3. Only push to Docker Hub if Step 2 exited cleanly (code 0)
+      - name: Push Verified Image to Docker Hub
+        run: |
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/hawkerai:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/hawkerai:${{ github.run_number }}
