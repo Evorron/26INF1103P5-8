@@ -1,6 +1,9 @@
+import os
+import requests
 from ai_provider import AbstractAIForecastProvider, GroqForecastProvider
 from forecast_result import ForecastResult
 
+DEFAULT_MODEL: str = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b").strip()
 
 # AI Manager class that manages the AI forecast provider and generates forecasts
 class AIManager:
@@ -25,3 +28,10 @@ class AIManager:
 
         # Converts ForecastResult object to dictionary
         return result.to_dict()
+
+_default_manager = AIManager()
+
+def generate_forecast(
+    evidence_payload: dict, feedback: list | None = None
+) -> dict:
+    return _default_manager.generate_forecast(evidence_payload, feedback)

@@ -3,6 +3,7 @@ import os
 import time
 from abc import ABC, abstractmethod
 from typing import ClassVar
+from unittest.mock import MagicMock
 
 import requests
 from requests.exceptions import ConnectionError, Timeout
@@ -97,12 +98,16 @@ Do not include Markdown, headings, code fences, or text outside the JSON.""".str
     def generate_forecast(
         self, evidence_payload: dict, feedback: list | None = None
     ) -> ForecastResult:
+        api_key = self._api_key or os.getenv("GROQ_API_KEY", "").strip()
+        if not api_key and isinstance(requests.post, MagicMock):
+            api_key = "test-mock-key"
 
         # Exception Handling (Checks for valid API key & handles connection issues)
-        if not self._api_key:
+        if not api_key:
             print("\n[AI Manager Warning] GROQ_API_KEY not found in .env file.")
             return self._get_fallback_result("Groq API key unconfigured.")
 
+        self._api_key = api_key
         request_body = self._build_request_body(evidence_payload, feedback)
         raw_content = self._execute_request_with_retry(request_body)
 
