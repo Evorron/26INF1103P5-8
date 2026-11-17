@@ -4,7 +4,6 @@ import csv
 from datetime import date, datetime
 from pathlib import Path
 
-
 # Historical sales records
 DATA_FOLDER = Path(__file__).resolve().parent / "data"
 RECORDS_FILE = DATA_FOLDER / "sales_records.csv"

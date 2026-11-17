@@ -5,16 +5,16 @@ This module connects the six managers without duplicating their work:
 * ``Input_output_manager`` collects and displays information.
 * ``logic_manager`` validates data and applies business rules.
 * ``data_manager`` reads and writes CSV files.
-* ``forecast_adapter`` creates a safe, user-facing forecast.
+* ``forecast_coordinator`` creates a safe, user-facing forecast.
 * ``ai_manager`` is called by the adapter when an AI estimate is needed.
 * ``activity_logger`` is called by the adapter to keep an audit trail.
 """
-
-import input_output_manager as io_manager
-import data_manager
-import forecast_adapter
-import logic_manager
 from datetime import datetime
+
+import data_manager
+import forecast_coordinator
+import input_output_manager as io_manager
+import logic_manager
 
 
 def add_sales_record() -> None:
@@ -81,7 +81,7 @@ def generate_forecast() -> None:
 
     # Generate the forecast only after the duplicate check
     all_records = data_manager.load_records(data_manager.RECORDS_FILE)
-    response = forecast_adapter.generate_logged_forecast(request, all_records)
+    response = forecast_coordinator.generate_logged_forecast(request, all_records)
 
     io_manager.show_forecast(response)
     save_function = (
