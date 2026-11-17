@@ -1,6 +1,7 @@
 from ai_provider import AbstractAIForecastProvider, GroqForecastProvider
 from forecast_result import ForecastResult
 
+
 # AI Manager class that manages the AI forecast provider and generates forecasts
 class AIManager:
 
