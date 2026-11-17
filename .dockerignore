@@ -1,0 +1,21 @@
+# Ignore Git Version Control
+.git/
+.gitignore
+
+# Ignore Docker Configurations
+Dockerfile
+.dockerignore
+
+# Python Cache and Compiled Files
+__pycache__/
+*.py[cod]
+*.pyc
+
+# Ignore any markdown documentation
+**/*.md
+
+# Ignore locally generated data
+data/
+
+# Ignore sensitive keys
+.env

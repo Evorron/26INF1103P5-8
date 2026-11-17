@@ -1,0 +1,7 @@
+user_name,business_type,record_date,food_item,portions_prepared,portions_sold,past_context
+tammy,hawker,2026-10-01,rice,100,100,
+tammy,hawker,2026-10-02,rice,120,110,heavy rain
+tammy,hawker,2026-10-03,rice,100,98,
+tammy,hawker,2026-10-04,rice,120,100,
+tammy,hawker,2026-10-01,chicken,100,93,
+tammy,hawker,2026-10-02,chicken,100,90,
