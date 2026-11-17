@@ -1,7 +1,7 @@
 import sqlite3
 from contextlib import closing
 from pathlib import Path
-from typing import Type  # noqa: UP006
+from typing import Type  # noqa: UP035
 
 from record import Record
 from storage_interface import IStorage
