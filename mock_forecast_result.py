@@ -1,6 +1,7 @@
 from ai_provider import AbstractAIForecastProvider
 from forecast_result import ForecastResult
 
+
 # Usage of Inheritance (MockForecastProvider implements the AbstractAIForecastProvider interface)
 class MockForecastProvider(AbstractAIForecastProvider):
 
