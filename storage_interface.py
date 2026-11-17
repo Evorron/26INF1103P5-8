@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+
 from record import Record
 
 

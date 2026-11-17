@@ -1,7 +1,8 @@
 import sqlite3
 from contextlib import closing
 from pathlib import Path
-from typing import Type
+from typing import type
+
 from record import Record
 from storage_interface import IStorage
 
@@ -11,7 +12,7 @@ class DatabaseStorage(IStorage):
         self,
         db_path: Path,
         table_name: str,
-        record_type: Type[Record],
+        record_type: type[Record],
     ):
         if not table_name.isidentifier():
             raise ValueError(f"Invalid table name: {table_name}")

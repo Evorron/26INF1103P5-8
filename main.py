@@ -10,14 +10,16 @@ This module connects the six managers without duplicating their work:
 * ``activity_logger`` is called by the adapter to keep an audit trail.
 """
 from datetime import datetime
+from pathlib import Path
+
+from IO_test import IOManager
 
 import data_manager
+import database_storage
 import forecast_coordinator
 import input_output_manager as io_manager
 import logic_manager
-import database_storage
-from pathlib import Path
-from IO_test import IOManager
+
 from setup_db import setup_database
 
 # Define the database path

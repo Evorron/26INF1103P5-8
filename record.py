@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+
 class Record(ABC):
     """Common interface for objects that can be stored in databases/CSVs."""
 

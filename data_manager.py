@@ -1,8 +1,9 @@
 """Record models and managers for sales records and AI recommendations."""
 
 from datetime import date, datetime
-from storage_interface import IStorage
+
 from record import Record
+from storage_interface import IStorage
 
 
 
