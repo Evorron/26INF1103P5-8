@@ -21,7 +21,6 @@ import input_output_manager as io_manager
 import logic_manager
 from setup_db import DatabaseSchema
 
-
 # Define the database path
 DB_PATH = Path(__file__).resolve().parent / "data" / "hawker.db"
 
