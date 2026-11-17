@@ -1,15 +1,24 @@
-import sqlite3
 from contextlib import closing
 from pathlib import Path
+import sqlite3
 
-DB_PATH = Path(__file__).resolve().parent / "data" / "hawker.db"
 
-def setup_database():
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with closing(sqlite3.connect(DB_PATH)) as conn:
-        cursor = conn.cursor()
+class DatabaseSchema:
+    """Creates and manages the SQLite schema for the hawker application."""
 
-        # Create Sales Table
+    def __init__(self, db_path: Path):
+        self._db_path = db_path
+
+    def initialize(self) -> None:
+        self._db_path.parent.mkdir(parents=True, exist_ok=True)
+        with closing(sqlite3.connect(self._db_path)) as conn:
+            cursor = conn.cursor()
+            self._create_sales_table(cursor)
+            self._create_recommendations_table(cursor)
+            self._create_indexes(cursor)
+            conn.commit()
+
+    def _create_sales_table(self, cursor: sqlite3.Cursor) -> None:
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS sales_records (
                 user_name TEXT,
@@ -22,7 +31,7 @@ def setup_database():
             )
         """)
 
-        # Create AI Recommendations Table
+    def _create_recommendations_table(self, cursor: sqlite3.Cursor) -> None:
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS ai_recommendations (
                 user_name TEXT,
@@ -39,6 +48,7 @@ def setup_database():
             )
         """)
 
+    def _create_indexes(self, cursor: sqlite3.Cursor) -> None:
         cursor.execute("""
             CREATE UNIQUE INDEX IF NOT EXISTS idx_sales_record_key
             ON sales_records (
@@ -55,8 +65,9 @@ def setup_database():
                 forecast_date
             )
         """)
-        conn.commit()
-        print("Database and tables created successfully!")
+
 
 if __name__ == "__main__":
-    setup_database()
+    schema = DatabaseSchema(Path(__file__).resolve().parent / "data" / "hawker.db")
+    schema.initialize()
+    print("Database and tables created successfully!")

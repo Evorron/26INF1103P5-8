@@ -19,7 +19,8 @@ import database_storage
 import forecast_coordinator
 import input_output_manager as io_manager
 import logic_manager
-from setup_db import setup_database
+from setup_db import DatabaseSchema
+
 
 # Define the database path
 DB_PATH = Path(__file__).resolve().parent / "data" / "hawker.db"
@@ -212,8 +213,9 @@ def run() -> None:
 #     run()
 
 if __name__ == "__main__":
-    # 1. Load existing data from the SQLite database into memory
-    setup_database()
+    # 1. initialize the database schema
+    DatabaseSchema(DB_PATH).initialize()
+
     sales_manager.load()
     recommendation_manager.load()
     
