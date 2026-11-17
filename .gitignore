@@ -5,8 +5,9 @@ __pycache__/
 
 # Locally generated test inventory data
 data/records.csv
-
+*.db
 # Ignore sensitive keys
-.env   
+.env
+.env/local
 
 
