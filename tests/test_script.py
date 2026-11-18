@@ -15,7 +15,7 @@ from data.setup_db import DatabaseSchema
 
 class TestActualApplicationOutputOffline(unittest.TestCase):
 
-    @patch('ai_manager.requests.post')
+    @patch('ai.ai_provider.requests.post')
     def test_print_actual_forecast_report(self, mock_post):
         """Run the actual forecast pipeline offline and print the real visual report output."""
         
