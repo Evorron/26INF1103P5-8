@@ -7,10 +7,10 @@ from pathlib import Path
 from unittest.mock import patch
 
 import input_output_manager as io_manager
-from logic import forecast_coordinator
 from data.data_manager import SalesRecord, SalesRecordManager
 from data.database_storage import DatabaseStorage
 from data.setup_db import DatabaseSchema
+from logic import forecast_coordinator
 
 
 class TestActualApplicationOutputOffline(unittest.TestCase):

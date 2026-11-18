@@ -11,11 +11,9 @@ This module connects the six managers without duplicating their work:
 """
 from pathlib import Path
 
-from input_output.in_out_main import IOManager
-
-from data import data_manager
-from data import database_storage
+from data import data_manager, database_storage
 from data.setup_db import DatabaseSchema
+from input_output.in_out_main import IOManager
 
 # Define the database path
 DB_PATH = Path(__file__).resolve().parent / "hawker_data" / "hawker.db"
