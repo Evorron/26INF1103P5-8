@@ -43,7 +43,7 @@ jobs:
           docker run --rm \
             -v "${{ github.workspace }}/test-mount-data:/app/test_data" \
             ${{ secrets.DOCKERHUB_USERNAME }}/hawkerai:latest \
-            python -c "import main; import pathlib; pathlib.Path('/app/data/mount_ok.txt').write_text('ok')"
+            python -c "import main; import pathlib; pathlib.Path('/app/test_data/mount_ok.txt').write_text('ok')"
           test -f ./test-mount-data/mount_ok.txt
 
         # 3. Only push to Docker Hub if Step 2 exited cleanly (code 0)
