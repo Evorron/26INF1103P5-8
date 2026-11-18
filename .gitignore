@@ -4,7 +4,7 @@ __pycache__/
 *.pyc
 
 # Locally generated inventory data
-data/
+hawker_data/
 *.db
 
 # Ignore sensitive keys
