@@ -6,16 +6,16 @@ from datetime import date, timedelta
 from pathlib import Path
 from unittest.mock import patch
 
-import forecast_coordinator
 import input_output_manager as io_manager
-from data_manager import SalesRecord, SalesRecordManager
-from database_storage import DatabaseStorage
-from setup_db import DatabaseSchema
+from data.data_manager import SalesRecord, SalesRecordManager
+from data.database_storage import DatabaseStorage
+from data.setup_db import DatabaseSchema
+from logic import forecast_coordinator
 
 
 class TestActualApplicationOutputOffline(unittest.TestCase):
 
-    @patch('ai_manager.requests.post')
+    @patch('ai.ai_provider.requests.post')
     def test_print_actual_forecast_report(self, mock_post):
         """Run the actual forecast pipeline offline and print the real visual report output."""
         

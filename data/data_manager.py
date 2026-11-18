@@ -2,8 +2,8 @@
 
 from datetime import date, datetime
 
-from record import Record
-from storage_interface import IStorage
+from data.record import Record
+from data.storage_interface import IStorage
 
 
 class SalesRecord(Record):

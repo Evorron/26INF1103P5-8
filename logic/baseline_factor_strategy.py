@@ -1,5 +1,5 @@
-from demand_factor_result import DemandFactorResult
-from demand_factor_strategy import DemandFactorStrategy
+from logic.demand_factor_result import DemandFactorResult
+from logic.demand_factor_strategy import DemandFactorStrategy
 
 """
 Overall responsibility: Supplies neutral historical-fallback settings when selected.

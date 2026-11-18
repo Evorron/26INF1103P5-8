@@ -3,8 +3,8 @@ from contextlib import closing
 from pathlib import Path
 from typing import Type  # noqa: UP035
 
-from record import Record
-from storage_interface import IStorage
+from data.record import Record
+from data.storage_interface import IStorage
 
 
 class DatabaseStorage(IStorage):

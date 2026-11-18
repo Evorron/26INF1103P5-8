@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from demand_factor_result import DemandFactorResult
+from logic.demand_factor_result import DemandFactorResult
 
 """
 Overall responsibility: Defines the common agreement followed by every demand-factor strategy.

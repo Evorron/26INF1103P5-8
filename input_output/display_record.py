@@ -1,6 +1,6 @@
 import shutil
 
-from data_formatting import DataFormatting
+from input_output.data_formatting import DataFormatting
 
 
 class display_records: 

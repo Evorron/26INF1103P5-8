@@ -1,6 +1,6 @@
 from datetime import date
 
-from forecast_rules import ForecastRules
+from logic.forecast_rules import ForecastRules
 
 """
 Overall Responsibility: Checks business data, selects relevant sales history, prepares forecasting evidence, and checks the completed forecast.

@@ -35,12 +35,8 @@ jobs:
       run: ruff check .
 
     - name: Run Unit Tests with "pytest"
-      run: pytest
+      run: python -m pytest
 
     # Verifies docker image compliation
     - name: Attempt Docker Build
       run: docker build -t hawkerai-test .
-
-# Questions to ask:
-# 1. Create multiple YAML files for each automated workflows or all under one as CI?
-# 2. Have a set requirements configuration/text file for workflow installation? (Instead of installation each manually as above)

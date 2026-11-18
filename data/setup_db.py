@@ -68,6 +68,6 @@ class DatabaseSchema:
 
 
 if __name__ == "__main__":
-    schema = DatabaseSchema(Path(__file__).resolve().parent / "data" / "hawker.db")
+    schema = DatabaseSchema(Path(__file__).resolve().parent / "hawker_data" / "hawker.db")
     schema.initialize()
     print("Database and tables created successfully!")

@@ -1,8 +1,8 @@
-from data_validation import business_type, date_vaildation
-from display_menu import display_all, display_welcome
-from display_record import display_records, forecast_display
-from hawker import Hawker
-from logic_manager_class import LogicManager
+from input_output.data_validation import business_type, date_vaildation
+from input_output.display_menu import display_all, display_welcome
+from input_output.display_record import display_records, forecast_display
+from input_output.hawker import Hawker
+from logic.logic_manager_class import LogicManager
 
 
 class IOManager:
@@ -17,7 +17,7 @@ class IOManager:
 
     def save_sales_record(self, record: dict) -> None:
         ##Convert dictionary to OOP object and save via SalesRecordManager
-        from data_manager import SalesRecord
+        from data.data_manager import SalesRecord
         try:
             self.logic_manager.validate_sales_record(record)
             sales_record = SalesRecord.from_dict(record)
@@ -155,7 +155,7 @@ class IOManager:
                 # 2. SAVE the forecast to the database using YOUR OOP class
                 from datetime import datetime
 
-                from data_manager import AIRecommendation
+                from data.data_manager import AIRecommendation
 
                 new_recommendation = AIRecommendation(
                     user_name=user_name,

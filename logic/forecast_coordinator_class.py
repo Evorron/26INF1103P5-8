@@ -1,10 +1,10 @@
 from pathlib import Path
 from uuid import uuid4
 
-import activity_logger
-from demand_factor_result import DemandFactorResult
-from demand_factor_strategy import DemandFactorStrategy
-from logic_manager_class import LogicManager
+from ai import activity_logger
+from logic.demand_factor_result import DemandFactorResult
+from logic.demand_factor_strategy import DemandFactorStrategy
+from logic.logic_manager_class import LogicManager
 
 """
 Overall responsibility: Coordinates the steps required to produce a completed forecast.

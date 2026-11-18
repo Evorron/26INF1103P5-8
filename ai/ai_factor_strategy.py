@@ -1,6 +1,6 @@
-import ai_manager
-from demand_factor_result import DemandFactorResult
-from demand_factor_strategy import DemandFactorStrategy
+from ai import ai_manager
+from logic.demand_factor_result import DemandFactorResult
+from logic.demand_factor_strategy import DemandFactorStrategy
 
 """
 Overall responsibility: Obtains the AI manager’s reply and converts it into the common demand-factor result.
