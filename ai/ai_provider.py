@@ -2,13 +2,20 @@ import json
 import os
 import time
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import ClassVar
 from unittest.mock import MagicMock
 
 import requests
+from dotenv import load_dotenv
 from requests.exceptions import ConnectionError, Timeout
 
 from logic.forecast_result import ForecastResult
+
+load_dotenv(
+    dotenv_path=Path(__file__).resolve().parents[1] / ".env",
+    override=False,
+)
 
 
 # Usage of Abstract Base Class (ABC)
