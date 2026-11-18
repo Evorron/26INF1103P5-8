@@ -13,7 +13,7 @@ from pathlib import Path
 
 import data.data_manager as data_manager
 import data.database_storage as database_storage
-from input_output.IO_main import IOManager
+from input_output.io_main import IOManager
 from data.setup_db import DatabaseSchema
 
 # Define the database path

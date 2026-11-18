@@ -1,7 +1,7 @@
 from pathlib import Path
 from uuid import uuid4
 
-import ai.activity_logger as activity_logger
+from ai import activity_logger
 from logic.demand_factor_result import DemandFactorResult
 from logic.demand_factor_strategy import DemandFactorStrategy
 from logic.logic_manager_class import LogicManager

@@ -1,4 +1,8 @@
-from input_output.data_validation import date_vaildation, positive_integer, sold_portions
+from input_output.data_validation import (
+    date_vaildation,
+    positive_integer,
+    sold_portions,
+    )
 from input_output.display_record import display_records
 
 

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import ai.ai_manager as ai_manager
+from ai import ai_manager
 from ai.ai_factor_strategy import ai_factor_strategy
 from logic.baseline_factor_strategy import baseline_factor_strategy
 from logic.forecast_coordinator_class import ForecastCoordinator

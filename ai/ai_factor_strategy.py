@@ -1,4 +1,4 @@
-import ai.ai_manager as ai_manager
+from ai import ai_manager
 from logic.demand_factor_result import DemandFactorResult
 from logic.demand_factor_strategy import DemandFactorStrategy
 
