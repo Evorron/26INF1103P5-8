@@ -34,5 +34,5 @@ You can also run the program by cloning the Github Repository and building the D
 
 3. Run the Docker image
 
-    `docker run --rm -it --env-file .env -v "%cd%:/app/data" <image_name>>`
+    `docker run --rm -it --env-file .env -v "%cd%\hawker_data:/app/hawker_data" <image_name>`
 
