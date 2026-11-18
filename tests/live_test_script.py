@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 
-from ai_manager import AIManager
-from ai_provider import GroqForecastProvider
+from ai.ai_manager import AIManager
+from ai.ai_provider import GroqForecastProvider
 
 load_dotenv(override=True)          # load environment variables
 

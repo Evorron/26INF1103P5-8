@@ -9,19 +9,14 @@ This module connects the six managers without duplicating their work:
 * ``ai_manager`` is called by the adapter when an AI estimate is needed.
 * ``activity_logger`` is called by the adapter to keep an audit trail.
 """
-from datetime import datetime
 from pathlib import Path
 
-import data_manager
-import database_storage
-import forecast_coordinator
-import input_output_manager as io_manager
-import logic_manager
-from IO_main import IOManager
-from setup_db import DatabaseSchema
+from data import data_manager, database_storage
+from data.setup_db import DatabaseSchema
+from input_output.in_out_main import IOManager
 
 # Define the database path
-DB_PATH = Path(__file__).resolve().parent / "data" / "hawker.db"
+DB_PATH = Path(__file__).resolve().parent / "hawker_data" / "hawker.db"
 
 # --- SALES MANAGER SETUP ---
 sales_storage = database_storage.DatabaseStorage(
@@ -38,6 +33,7 @@ recommendation_storage = database_storage.DatabaseStorage(
     data_manager.AIRecommendation
 )
 recommendation_manager = data_manager.RecommendationManager(recommendation_storage)
+
 
 
 if __name__ == "__main__":

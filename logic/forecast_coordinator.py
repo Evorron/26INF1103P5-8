@@ -1,10 +1,10 @@
 from pathlib import Path
 
-import ai_manager
-from ai_factor_strategy import ai_factor_strategy
-from baseline_factor_strategy import baseline_factor_strategy
-from forecast_coordinator_class import ForecastCoordinator
-from logic_manager import default_logic
+from ai import ai_manager
+from ai.ai_factor_strategy import ai_factor_strategy
+from logic.baseline_factor_strategy import baseline_factor_strategy
+from logic.forecast_coordinator_class import ForecastCoordinator
+from logic.logic_manager import default_logic
 
 """
 Overall responsibility: Creates and connects the default forecasting setup.
@@ -18,7 +18,7 @@ Main components:
 This is the setup and entry-point file; the workflow implementation is in forecast_coordinator_class.py.
 """
 
-DATA_FOLDER = Path(__file__).resolve().parent / "data"
+DATA_FOLDER = Path(__file__).resolve().parent / "hawker_data"
 
 default_coordinator = ForecastCoordinator(logic=default_logic, factor_strategies=[ai_factor_strategy, baseline_factor_strategy], log_path=DATA_FOLDER / "forecast_activity.jsonl", model=ai_manager.DEFAULT_MODEL)
 generate_logged_forecast = default_coordinator.generate_logged_forecast

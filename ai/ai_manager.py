@@ -2,8 +2,8 @@ import os
 
 import requests  # noqa: F401
 
-from ai_provider import AbstractAIForecastProvider, GroqForecastProvider
-from forecast_result import ForecastResult
+from ai.ai_provider import AbstractAIForecastProvider, GroqForecastProvider
+from logic.forecast_result import ForecastResult
 
 DEFAULT_MODEL: str = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b").strip()
 

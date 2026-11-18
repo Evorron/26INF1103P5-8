@@ -1,5 +1,9 @@
-from data_validation import date_vaildation, positive_integer, sold_portions
-from display_record import display_records
+from input_output.data_validation import (
+    date_vaildation,
+    positive_integer,
+    sold_portions,
+    )
+from input_output.display_record import display_records
 
 
 class Hawker:
@@ -97,7 +101,7 @@ class Hawker:
  
     def collect_record_search(self):
         ##"Viewing historical records"
-        print("\nView sales summary report")
+        print("\nView Sales Summary Report")
  
         food_item = input("Food item: ").strip()
  
