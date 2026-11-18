@@ -1,7 +1,10 @@
+from pathlib import Path
+
 from input_output.data_validation import business_type, date_vaildation
 from input_output.display_menu import display_all, display_welcome
 from input_output.display_record import display_records, forecast_display
 from input_output.hawker import Hawker
+from logic import forecast_coordinator
 from logic.logic_manager_class import LogicManager
 
 
@@ -98,12 +101,6 @@ class IOManager:
             elif choice == "2":
                 forecast_info = hawker_session.collect_forecast_infomation()
                 all_records = self.load_sales_records(user_name)
-                try:
-                    # LogicManager validates the request and ensures history exists
-                   matching = self.logic_manager.records_for_forecast(forecast_info, all_records)
-                except ValueError as e:
-                     print(f"\n[Error] {e}\n")                    
-                     continue
 
                 existing_recommendation = next(
                     (
@@ -131,23 +128,16 @@ class IOManager:
                         continue
                     save_mode = "replace"
 
-                recorded_sales = [r["portions_sold"] for r in matching]
-                suggested = int(sum(recorded_sales) / len(recorded_sales))
-
-                forecast_response = {
-                    "user_name": user_name,
-                    "food_item": forecast_info["food_item"],
-                    "forecast_date": forecast_info["target_date"].isoformat(),
-                    "recorded_sales": recorded_sales,
-                    "suggested_portions": suggested,
-                    "confidence": "moderate",
-                    "reasoning": f"Based on past sales records for {forecast_info['food_item']}.",
-                    "evidence": [
-                        {"claim": "Average historical sales", "metric": "portions", "value": str(suggested)}
-                    ],
-                    "business_advice": "Prepare ingredients slightly ahead of peak hours.",
-                    "warning": "" if recorded_sales else "No prior records found; using baseline estimate.",
-                }
+                log_path = Path(__file__).resolve().parents[1] / "hawker_data" / "forecast_activity.jsonl"
+                try:
+                    forecast_response = forecast_coordinator.generate_logged_forecast(
+                        forecast_info,
+                        all_records,
+                        log_path=log_path,
+                    )
+                except (RuntimeError, ValueError, KeyError, TypeError) as error:
+                    print(f"\n[Error] Could not generate a forecast: {error}\n")
+                    continue
                 
                 # 1. Display the forecast
                 forecast_display.show_forecast(forecast_response)
@@ -161,11 +151,11 @@ class IOManager:
                     user_name=user_name,
                     food_item=forecast_info["food_item"],
                     forecast_date=forecast_info["target_date"],
-                    recommended_portions=suggested,
+                    recommended_portions=forecast_response["suggested_portions"],
                     reason=forecast_response["reasoning"],
                     verified_evidence="; ".join(item["claim"] for item in forecast_response["evidence"]),
                     suggested_next_step=forecast_response["business_advice"],
-                    forecast_method="Historical Average",
+                    forecast_method=forecast_response["forecast_method"],
                     confidence=forecast_response["confidence"],
                     generated_at=datetime.now(),
                     warning=forecast_response["warning"]
