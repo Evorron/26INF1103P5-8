@@ -1,11 +1,8 @@
-from datetime import date
-from pathlib import Path
-from display_menu import display_welcome, display_all
+from data_validation import business_type, date_vaildation
+from display_menu import display_all, display_welcome
 from display_record import display_records, forecast_display
 from hawker import Hawker
-from data_validation import business_type, date_vaildation, positive_integer, sold_portions
 from logic_manager_class import LogicManager
-
 
 
 class IOManager:
@@ -89,7 +86,6 @@ class IOManager:
         
         ##Instantiate validation classes from data_vaildation.py
         date_validator = date_vaildation()
-        pos_int_validator = positive_integer()
 
         while True:
             choice = display_all()
@@ -157,8 +153,9 @@ class IOManager:
                 forecast_display.show_forecast(forecast_response)
 
                 # 2. SAVE the forecast to the database using YOUR OOP class
-                from data_manager import AIRecommendation
                 from datetime import datetime
+
+                from data_manager import AIRecommendation
 
                 new_recommendation = AIRecommendation(
                     user_name=user_name,
@@ -222,31 +219,7 @@ class IOManager:
                     # Display the records
                     display_records.show_records(filtered)
                 except ValueError as e:
-                    print(f"\n[Error] {e}\n")
-
-      ##Calculate Average Wastage % (Leftovers / Prepared * 100)
-                if total_prepared > 0:
-                    total_wasted = total_prepared - total_sold
-                    wastage_pct = (total_wasted / total_prepared) * 100
-                else:
-                    wastage_pct = 0.0
-                
-                # Calculate Average Daily Sales (Total sold / Number of recorded days)
-                # Note: This assumes "average" means average per day you actually recorded data
-                avg_daily_sales = total_sold / len(filtered)
-
-                # Build the dictionary for the display class
-                summary_data = {
-                    "food_item": search_info["food_item"],
-                    "start_date": search_info["start_date"].isoformat(),
-                    "end_date": search_info["end_date"].isoformat(),
-                    "total_prepared": total_prepared,
-                    "total_sold": total_sold,
-                    "wastage_percentage": wastage_pct,
-                    "average_daily_sales": avg_daily_sales
-                }
-
-                display_records.show_sales_summary(summary_data)      
+                    print(f"\n[Error] {e}\n")     
                 
             elif choice == "5":
                 forecast_date = date_validator.read_date(
