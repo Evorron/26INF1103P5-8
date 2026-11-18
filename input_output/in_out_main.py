@@ -101,12 +101,6 @@ class IOManager:
             elif choice == "2":
                 forecast_info = hawker_session.collect_forecast_infomation()
                 all_records = self.load_sales_records(user_name)
-                try:
-                    # LogicManager validates the request and ensures history exists
-                   matching = self.logic_manager.records_for_forecast(forecast_info, all_records)
-                except ValueError as e:
-                     print(f"\n[Error] {e}\n")                    
-                     continue
 
                 existing_recommendation = next(
                     (
