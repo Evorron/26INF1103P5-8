@@ -1,5 +1,5 @@
-from ai_manager import AIManager
-from mock_forecast_result import MockForecastProvider
+from ai.ai_manager import AIManager
+from tests.mock_forecast_result import MockForecastProvider
 
 
 def test_ai_manager_offline_mock():

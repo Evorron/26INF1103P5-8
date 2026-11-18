@@ -1,5 +1,5 @@
-from forecast_rules import ForecastRules
-from logic_manager_class import LogicManager
+from logic.forecast_rules import ForecastRules
+from logic.logic_manager_class import LogicManager
 
 """
 Overall Responsibility: Provides the entry points other modules can use to access the business logic

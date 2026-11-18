@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 import requests
 from requests.exceptions import ConnectionError, Timeout
 
-from forecast_result import ForecastResult
+from logic.forecast_result import ForecastResult
 
 
 # Usage of Abstract Base Class (ABC)

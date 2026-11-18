@@ -15,7 +15,7 @@ __pycache__/
 **/*.md
 
 # Ignore locally generated data
-data/
+hawker_data/
 
 # Ignore sensitive keys
 .env

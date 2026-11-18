@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from record import Record
+from data.record import Record
 
 
 class IStorage(ABC):
