@@ -11,12 +11,19 @@ This tool is able to do the following:
 <h1>Installation & Set-up</h1> 
 
 <h2>Method 1 (Docker):</h2>
-You can run the program virtually via Docker without pulling the Git Repository
+You can run the latest version of the program virtually via Docker without pulling the Git Repository
+The `.env` file needs to be in the same folder where the docker image is being executed.
 
 1. Open Command Prompt & navigate to a path you wish to use
-2. Copy & Run the following command:
+2. Create and place the `.env` file with your Grok API key in your current directory
 
-    `docker run --rm -it -v "%cd%:/app/data" evorron/hawkerai:demo-image`
+    ` GROQ_API_KEY= YourActualKey`
+   
+3. Copy & Run the following command:
+
+    `docker run --rm -it --env-file .env -v "%cd%\hawker_data:/app/hawker_data" evorron/hawkerai:latest`
+
+The `hawker_data/hawker.db` path will be placed in your current directory 
 
 <h2>Method 2 (Clone Git Repo + Build Docker Image):</h2>
 You can also run the program by cloning the Github Repository and building the Docker Image yourself
