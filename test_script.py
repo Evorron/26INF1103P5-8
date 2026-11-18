@@ -6,9 +6,11 @@ from datetime import date, timedelta
 from pathlib import Path
 from unittest.mock import patch
 
-import data_manager
 import forecast_coordinator
 import input_output_manager as io_manager
+from data_manager import SalesRecord, SalesRecordManager
+from database_storage import DatabaseStorage
+from setup_db import DatabaseSchema
 
 
 class TestActualApplicationOutputOffline(unittest.TestCase):
@@ -19,21 +21,40 @@ class TestActualApplicationOutputOffline(unittest.TestCase):
         
         # 1. Create a temporary environment / CSV path so it runs safely offline
         with tempfile.TemporaryDirectory() as temp_dir:
-            sales_file = Path(temp_dir) / "sales_records.csv"
+            temp_path = Path(temp_dir)
+            db_path = temp_path / "test_hawker.db"
+
+            # Create an isolated SQLite schema and sales-record manager.
+            DatabaseSchema(db_path).initialize()
+            sales_storage = DatabaseStorage(
+                db_path=db_path,
+                table_name="sales_records",
+                record_type=SalesRecord,
+            )
+            sales_manager = SalesRecordManager(sales_storage)
+            sales_manager.load()
 
             # 2. Put some fake historical sales records so the logic rules pass
             past_date = date.today() - timedelta(days=5)
             for i in range(5):
-                sample_record = {
-                    "user_name": "John Doe",
-                    "business_type": "Hawker",
-                    "record_date": past_date + timedelta(days=i),
-                    "food_item": "Ice Cream",
-                    "portions_prepared": 100,
-                    "portions_sold": 80,
-                    "past_context": "Normal rainy day"
-                }
-                data_manager.add_record(sales_file, sample_record)
+                sales_manager.add(
+                    SalesRecord(
+                        user_name="John Doe",
+                        business_type="Hawker",
+                        record_date=past_date + timedelta(days=i),
+                        food_item="Ice Cream",
+                        portions_prepared=100,
+                        portions_sold=80,
+                        past_context="Normal rainy day",
+                    )
+                )
+
+            # The forecasting logic expects dictionaries with record_date as a date.
+            all_records = []
+            for record in sales_manager.get_all():
+                record_data = record.to_dict()
+                record_data["record_date"] = record.record_date
+                all_records.append(record_data)
 
             # 3. Define the hardcoded sample AI response matching your JSON schema
             hardcoded_ai_response = {
@@ -65,12 +86,9 @@ class TestActualApplicationOutputOffline(unittest.TestCase):
                 "target_date": date.today() + timedelta(days=1),
                 "future_context": "Community event nearby"
             }
-
-            # 6. Load the records and invoke the actual adapter function
-            all_records = data_manager.load_records(sales_file)
             
             # This triggers the actual production pipeline (adapter -> logic -> ai_manager mock)
-            forecast_response = forecast_coordinator.generate_logged_forecast(request, all_records)
+            forecast_response = forecast_coordinator.generate_logged_forecast(request, all_records, log_path=temp_path / "forecast_activity.jsonl")
 
             # 7. Print the exact visual report using your actual IO display function
             io_manager.show_forecast(forecast_response)
