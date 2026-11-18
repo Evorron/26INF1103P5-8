@@ -41,7 +41,7 @@ jobs:
         run: |
           mkdir -p ./test-mount-data
           docker run --rm \
-            -v "${{ github.workspace }}/test-mount-data:/app/data" \
+            -v "${{ github.workspace }}/test-mount-data:/app/test_data" \
             ${{ secrets.DOCKERHUB_USERNAME }}/hawkerai:latest \
             python -c "import main; import pathlib; pathlib.Path('/app/data/mount_ok.txt').write_text('ok')"
           test -f ./test-mount-data/mount_ok.txt
