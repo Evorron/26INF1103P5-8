@@ -97,7 +97,7 @@ class Hawker:
  
     def collect_record_search(self):
         ##"Viewing historical records"
-        print("\nView historical records")
+        print("\nView sales summary report")
  
         food_item = input("Food item: ").strip()
  
